@@ -29,7 +29,7 @@ namespace sr {
     using Status = Result<void>;
 
     template<typename T>
-    constexpr auto unwrap(Result<T> res, const char *msg = "fatal error") {
+    constexpr auto unwrap(Result<T> res, const char *msg = "fatal error") -> T {
         if (!res) {
             std::println(stderr, "{}: {}", msg, to_string(res.error()));
             std::abort();

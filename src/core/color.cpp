@@ -1,7 +1,7 @@
 #include "sr/core/color.h"
 
 namespace sr {
-    Color Color::blend_over(Color dst) const noexcept {
+    auto Color::blend_over(Color dst) const noexcept -> Color {
         const f32 sa = static_cast<f32>(a) / 255.f;
         const f32 inv = 1.f - sa;
         return {
@@ -12,7 +12,7 @@ namespace sr {
         };
     }
 
-    Color Color::lerp(Color a, Color b, f32 t) noexcept {
+    auto Color::lerp(Color a, Color b, f32 t) noexcept -> Color {
         const f32 inv = 1.f - t;
         return {
             static_cast<u8>(static_cast<f32>(a.r) * inv + static_cast<f32>(b.r) * t + 0.5f),

@@ -15,14 +15,14 @@ namespace sr {
             : r(r), g(g), b(b), a(a) {
         }
 
-        [[nodiscard]] constexpr u32 to_argb() const noexcept {
+        [[nodiscard]] constexpr auto to_argb() const noexcept -> u32 {
             return static_cast<u32>(a) << 24
                    | static_cast<u32>(r) << 16
                    | static_cast<u32>(g) << 8
                    | static_cast<u32>(b);
         }
 
-        [[nodiscard]] static constexpr Color from_argb(u32 c) noexcept {
+        [[nodiscard]] static constexpr auto from_argb(u32 c) noexcept -> Color {
             return {
                 static_cast<u8>(c >> 16),
                 static_cast<u8>(c >> 8),
@@ -31,9 +31,9 @@ namespace sr {
             };
         }
 
-        [[nodiscard]] Color blend_over(Color dst) const noexcept;
+        [[nodiscard]] auto blend_over(Color dst) const noexcept -> Color;
 
-        static Color lerp(Color a, Color b, f32 t) noexcept;
+        [[nodiscard]] static auto lerp(Color a, Color b, f32 t) noexcept -> Color;
 
         constexpr bool operator==(const Color &) const noexcept = default;
     };

@@ -9,34 +9,33 @@
 namespace sr {
     class FrameBuffer {
     public:
-        static Result<FrameBuffer> create(i32 width, i32 height) noexcept;
+        static auto create(i32 width, i32 height) noexcept -> Result<FrameBuffer>;
 
+        auto clear(Color c = colors::black) noexcept -> void;
 
-        void clear(Color c = colors::black) noexcept;
+        auto clear(u32 argb) noexcept -> void;
 
-        void clear(u32 argb) noexcept;
+        auto set_pixel(i32 x, i32 y, Color c) noexcept -> void;
 
-        void set_pixel(i32 x, i32 y, Color c) noexcept;
+        auto set_pixel(i32 x, i32 y, u32 argb) noexcept -> void;
 
-        void set_pixel(i32 x, i32 y, u32 argb) noexcept;
+        [[nodiscard]] auto get_pixel(i32 x, i32 y) const noexcept -> Color;
 
-        [[nodiscard]] Color get_pixel(i32 x, i32 y) const noexcept;
+        auto fill_hor_line(i32 x0, i32 x1, i32 y, u32 argb) noexcept -> void;
 
-        void fill_hor_line(i32 x0, i32 x1, i32 y, u32 argb) noexcept;
-
-        [[nodiscard]] bool in_bounds(i32 x, i32 y) const noexcept {
+        [[nodiscard]] auto in_bounds(i32 x, i32 y) const noexcept -> bool {
             return x >= 0 && x < m_width && y >= 0 && y < m_height;
         }
 
-        [[nodiscard]] const u32 *data() const noexcept { return m_buf.data(); }
-        [[nodiscard]] u32 *data() noexcept { return m_buf.data(); }
-        [[nodiscard]] std::span<const u32> span() const noexcept { return m_buf; }
+        [[nodiscard]] auto data() const noexcept -> const u32 * { return m_buf.data(); }
+        [[nodiscard]] auto data() noexcept -> u32 * { return m_buf.data(); }
+        [[nodiscard]] auto span() const noexcept -> std::span<const u32> { return m_buf; }
 
-        [[nodiscard]] i32 width() const noexcept { return m_width; }
-        [[nodiscard]] i32 height() const noexcept { return m_height; }
-        [[nodiscard]] i32 stride() const noexcept { return m_width; }
+        [[nodiscard]] auto width() const noexcept -> i32 { return m_width; }
+        [[nodiscard]] auto height() const noexcept -> i32 { return m_height; }
+        [[nodiscard]] auto stride() const noexcept -> i32 { return m_width; }
 
-        [[nodiscard]] Status resize(i32 w, i32 h) noexcept;
+        [[nodiscard]] auto resize(i32 w, i32 h) noexcept -> Status;
 
     private:
         FrameBuffer(i32 w, i32 h, std::vector<u32> buf) noexcept;

@@ -28,7 +28,7 @@ namespace sr {
           m_dt{other.m_dt} {
     }
 
-    Window &Window::operator=(Window &&other) noexcept {
+    auto Window::operator=(Window &&other) noexcept -> Window & {
         if (this != &other) {
             if (m_window) {
                 mfb_close(m_window);
@@ -45,7 +45,7 @@ namespace sr {
         return *this;
     }
 
-    Result<Window> Window::create(const char *title, i32 width, i32 height) noexcept {
+    auto Window::create(const char *title, i32 width, i32 height) noexcept -> Result<Window> {
         auto *win = mfb_open(title, static_cast<unsigned>(width), static_cast<unsigned>(height));
         if (!win) {
             return std::unexpected{Error::WindowCreationFailed};
@@ -53,51 +53,51 @@ namespace sr {
         return Window{win, width, height};
     }
 
-    void Window::set_target_fps(u32 fps) noexcept {
+    auto Window::set_target_fps(u32 fps) noexcept -> void {
         mfb_set_target_fps(fps);
     }
 
-    bool Window::key_down(Key key) const noexcept {
+    auto Window::key_down(Key key) const noexcept -> bool {
         assert(m_window);
         const auto *buf = mfb_get_key_buffer(m_window);
         return buf && buf[static_cast<i32>(key)];
     }
 
-    bool Window::key_pressed(Key key) const noexcept {
+    auto Window::key_pressed(Key key) const noexcept -> bool {
         assert(m_window);
         const auto *buf = mfb_get_key_buffer(m_window);
         const auto k = static_cast<i32>(key);
         return buf && buf[k] && !m_prev_keys[k];
     }
 
-    bool Window::key_released(Key key) const noexcept {
+    auto Window::key_released(Key key) const noexcept -> bool {
         assert(m_window);
         const auto *buf = mfb_get_key_buffer(m_window);
         const auto k = static_cast<i32>(key);
         return buf && !buf[k] && m_prev_keys[k];
     }
 
-    bool Window::mouse_down(MouseButton btn) const noexcept {
+    auto Window::mouse_down(MouseButton btn) const noexcept -> bool {
         assert(m_window);
         const auto *buf = mfb_get_mouse_button_buffer(m_window);
         return buf && buf[static_cast<u8>(btn)];
     }
 
-    bool Window::mouse_pressed(MouseButton btn) const noexcept {
+    auto Window::mouse_pressed(MouseButton btn) const noexcept -> bool {
         assert(m_window);
         const auto *buf = mfb_get_mouse_button_buffer(m_window);
         const auto b = static_cast<u8>(btn);
         return buf && buf[b] && !m_prev_mouse[b];
     }
 
-    bool Window::mouse_released(MouseButton btn) const noexcept {
+    auto Window::mouse_released(MouseButton btn) const noexcept -> bool {
         assert(m_window);
         const auto *buf = mfb_get_mouse_button_buffer(m_window);
         const auto b = static_cast<u8>(btn);
         return buf && !buf[b] && m_prev_mouse[b];
     }
 
-    Vec2f Window::mouse_pos() const noexcept {
+    auto Window::mouse_pos() const noexcept -> Vec2f {
         assert(m_window);
         return {
             static_cast<f32>(mfb_get_mouse_x(m_window)),
@@ -105,13 +105,13 @@ namespace sr {
         };
     }
 
-    f32 Window::mouse_scroll_y() const noexcept {
+    auto Window::mouse_scroll_y() const noexcept -> f32 {
         assert(m_window);
         return mfb_get_mouse_scroll_y(m_window);
     }
 
     // No assert: called from present() before mfb_update_ex which may close the window
-    void Window::update_input() noexcept {
+    auto Window::update_input() noexcept -> void {
         if (!m_window) {
             return;
         }
@@ -124,7 +124,7 @@ namespace sr {
     }
 
     // No assert: mfb_update_ex/mfb_wait_sync may destroy the window at runtime
-    void Window::present(const FrameBuffer &fb) noexcept {
+    auto Window::present(const FrameBuffer &fb) noexcept -> void {
         if (!m_window) {
             return;
         }

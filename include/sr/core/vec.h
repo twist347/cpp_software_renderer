@@ -20,44 +20,44 @@ namespace sr {
         T x{};
         T y{};
 
-        constexpr Vec2 operator+(Vec2 v) const noexcept { return {x + v.x, y + v.y}; }
-        constexpr Vec2 operator-(Vec2 v) const noexcept { return {x - v.x, y - v.y}; }
-        constexpr Vec2 operator*(T s) const noexcept { return {x * s, y * s}; }
-        constexpr Vec2 operator/(T s) const noexcept { return {x / s, y / s}; }
-        constexpr Vec2 operator-() const noexcept { return {-x, -y}; }
+        constexpr auto operator+(Vec2 v) const noexcept -> Vec2 { return {x + v.x, y + v.y}; }
+        constexpr auto operator-(Vec2 v) const noexcept -> Vec2 { return {x - v.x, y - v.y}; }
+        constexpr auto operator*(T s) const noexcept -> Vec2 { return {x * s, y * s}; }
+        constexpr auto operator/(T s) const noexcept -> Vec2 { return {x / s, y / s}; }
+        constexpr auto operator-() const noexcept -> Vec2 { return {-x, -y}; }
 
-        constexpr T dot(Vec2 v) const noexcept { return x * v.x + y * v.y; }
-        constexpr T cross(Vec2 v) const noexcept { return x * v.y - y * v.x; }
-        constexpr T length_sq() const noexcept { return dot(*this); }
+        constexpr auto dot(Vec2 v) const noexcept -> T { return x * v.x + y * v.y; }
+        constexpr auto cross(Vec2 v) const noexcept -> T { return x * v.y - y * v.x; }
+        constexpr auto length_sq() const noexcept -> T { return dot(*this); }
 
-        [[nodiscard]] T length() const noexcept requires Floating<T> {
+        [[nodiscard]] auto length() const noexcept -> T requires Floating<T> {
             return std::sqrt(length_sq());
         }
 
-        [[nodiscard]] Vec2 normalized() const noexcept requires Floating<T> {
+        [[nodiscard]] auto normalized() const noexcept -> Vec2 requires Floating<T> {
             const auto l = length();
             return l > T(0) ? *this / l : Vec2{};
         }
 
-        constexpr Vec2 &operator+=(Vec2 o) noexcept {
+        constexpr auto operator+=(Vec2 o) noexcept -> Vec2 & {
             x += o.x;
             y += o.y;
             return *this;
         }
 
-        constexpr Vec2 &operator-=(Vec2 o) noexcept {
+        constexpr auto operator-=(Vec2 o) noexcept -> Vec2 & {
             x -= o.x;
             y -= o.y;
             return *this;
         }
 
-        constexpr Vec2 &operator*=(T s) noexcept {
+        constexpr auto operator*=(T s) noexcept -> Vec2 & {
             x *= s;
             y *= s;
             return *this;
         }
 
-        static constexpr Vec2 lerp(Vec2 a, Vec2 b, T t) noexcept {
+        static constexpr auto lerp(Vec2 a, Vec2 b, T t) noexcept -> Vec2 {
             return a + (b - a) * t;
         }
 
