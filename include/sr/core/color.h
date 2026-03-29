@@ -1,0 +1,48 @@
+#pragma once
+
+#include "sr/core/types.h"
+
+namespace sr {
+    struct Color {
+        u8 r{};
+        u8 g{};
+        u8 b{};
+        u8 a{255};
+
+        constexpr Color() noexcept = default;
+
+        constexpr Color(u8 r, u8 g, u8 b, u8 a = 255) noexcept
+            : r(r), g(g), b(b), a(a) {
+        }
+
+        [[nodiscard]] constexpr u32 to_argb() const noexcept {
+            return static_cast<u32>(a) << 24
+                   | static_cast<u32>(r) << 16
+                   | static_cast<u32>(g) << 8
+                   | static_cast<u32>(b);
+        }
+
+        [[nodiscard]] static constexpr Color from_argb(u32 c) noexcept {
+            return {
+                static_cast<u8>(c >> 16),
+                static_cast<u8>(c >> 8),
+                static_cast<u8>(c),
+                static_cast<u8>(c >> 24)
+            };
+        }
+
+        [[nodiscard]] Color blend_over(Color dst) const noexcept;
+
+        static Color lerp(Color a, Color b, f32 t) noexcept;
+
+        constexpr bool operator==(const Color &) const noexcept = default;
+    };
+
+    namespace colors {
+        static constexpr auto black = Color{0, 0, 0};
+        static constexpr auto white = Color{255, 255, 255};
+        static constexpr auto red = Color{255, 0, 0};
+        static constexpr auto green = Color{0, 255, 0};
+        static constexpr auto blue = Color{0, 0, 255};
+    }
+}
