@@ -29,7 +29,7 @@ set(SR_SOURCES
 
 add_library(sr STATIC ${SR_SOURCES})
 target_include_directories(sr PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(sr PUBLIC minifb::minifb)
+target_link_libraries(sr PRIVATE minifb::minifb)
 target_compile_options(sr PRIVATE -Wall -Wextra -pedantic)
 
 add_subdirectory(examples)
