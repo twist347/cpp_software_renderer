@@ -36,4 +36,7 @@ namespace sr {
         }
         return std::move(*res);
     }
+
+    static_assert(sizeof(f32) == 4);
+    static_assert(sizeof(f64) == 8);
 }

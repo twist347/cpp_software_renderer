@@ -246,40 +246,40 @@ namespace sr::raster {
 
     // Scanline triangle fill
     auto fill_triangle(FrameBuffer &fb, Vec2i a, Vec2i b, Vec2i c, Color col) noexcept -> void {
-        if (a.y > b.y) {
+        if (a.y() > b.y()) {
             std::swap(a, b);
         }
-        if (a.y > c.y) {
+        if (a.y() > c.y()) {
             std::swap(a, c);
         }
-        if (b.y > c.y) {
+        if (b.y() > c.y()) {
             std::swap(b, c);
         }
 
-        if (a.y == c.y) {
+        if (a.y() == c.y()) {
             return; // degenerate
         }
 
         const u32 argb = col.to_argb();
 
         auto edge_x = [](Vec2i from, Vec2i to, i32 y) -> i32 {
-            const i32 dy = to.y - from.y;
+            const i32 dy = to.y() - from.y();
             if (dy == 0) {
-                return from.x;
+                return from.x();
             }
-            return from.x + (y - from.y) * (to.x - from.x) / dy;
+            return from.x() + (y - from.y()) * (to.x() - from.x()) / dy;
         };
 
         // Upper half (a -> b, a -> c)
-        for (i32 y = a.y; y < b.y; ++y) {
+        for (i32 y = a.y(); y < b.y(); ++y) {
             fb.fill_hor_line(edge_x(a, b, y), edge_x(a, c, y), y, argb);
         }
 
         // Lower half (b -> c, a -> c)
-        if (b.y == c.y) {
-            fb.fill_hor_line(b.x, c.x, b.y, argb);
+        if (b.y() == c.y()) {
+            fb.fill_hor_line(b.x(), c.x(), b.y(), argb);
         } else {
-            for (i32 y = b.y; y <= c.y; ++y) {
+            for (i32 y = b.y(); y <= c.y(); ++y) {
                 fb.fill_hor_line(edge_x(b, c, y), edge_x(a, c, y), y, argb);
             }
         }
@@ -302,8 +302,8 @@ namespace sr::raster {
             return;
         }
 
-        i32 y_min = points[0].y;
-        i32 y_max = points[0].y;
+        i32 y_min = points[0].y();
+        i32 y_max = points[0].y();
         for (const auto &[x, y] : points) {
             y_min = std::min(y_min, y);
             y_max = std::max(y_max, y);

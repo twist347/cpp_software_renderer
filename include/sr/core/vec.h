@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <concepts>
+#include <array>
 
 #include "sr/core/types.h"
 
@@ -15,56 +16,135 @@ namespace sr {
     template<typename T>
     concept Number = (Integral<T> || Floating<T>) && !std::same_as<T, bool>;
 
-    template<Number T = f32>
-    struct Vec2 {
-        T x{};
-        T y{};
+    template<Number T, usize N>
+        requires (N > 0)
+    struct Vec {
+    private:
+        std::array<T, N> m_data{};
 
-        constexpr auto operator+(Vec2 v) const noexcept -> Vec2 { return {x + v.x, y + v.y}; }
-        constexpr auto operator-(Vec2 v) const noexcept -> Vec2 { return {x - v.x, y - v.y}; }
-        constexpr auto operator*(T s) const noexcept -> Vec2 { return {x * s, y * s}; }
-        constexpr auto operator/(T s) const noexcept -> Vec2 { return {x / s, y / s}; }
-        constexpr auto operator-() const noexcept -> Vec2 { return {-x, -y}; }
+    public:
+        constexpr Vec() noexcept = default;
 
-        constexpr auto dot(Vec2 v) const noexcept -> T { return x * v.x + y * v.y; }
-        constexpr auto cross(Vec2 v) const noexcept -> T { return x * v.y - y * v.x; }
-        constexpr auto length_sq() const noexcept -> T { return dot(*this); }
-
-        [[nodiscard]] auto length() const noexcept -> T requires Floating<T> {
-            return std::sqrt(length_sq());
+        template<typename... Args>
+            requires (sizeof...(Args) == N && (std::convertible_to<Args, T> && ...))
+        constexpr Vec(Args... args) noexcept : m_data{static_cast<T>(args)...} {
         }
 
-        [[nodiscard]] auto normalized() const noexcept -> Vec2 requires Floating<T> {
-            const auto l = length();
-            return l > T(0) ? *this / l : Vec2{};
+        constexpr auto x(this auto &&self) noexcept -> auto & {
+            return self.m_data[0];
         }
 
-        constexpr auto operator+=(Vec2 o) noexcept -> Vec2 & {
-            x += o.x;
-            y += o.y;
+        constexpr auto y(this auto &&self) noexcept -> auto & {
+            return self.m_data[1];
+        }
+
+        constexpr auto z(this auto &&self) noexcept -> auto & {
+            return self.m_data[2];
+        }
+
+        constexpr auto operator+=(const Vec &v) noexcept -> Vec & {
+            for (usize i = 0; i < N; ++i) {
+                m_data[i] += v.m_data[i];
+            }
             return *this;
         }
 
-        constexpr auto operator-=(Vec2 o) noexcept -> Vec2 & {
-            x -= o.x;
-            y -= o.y;
+        constexpr auto operator-=(const Vec &v) noexcept -> Vec & {
+            for (usize i = 0; i < N; ++i) {
+                m_data[i] -= v.m_data[i];
+            }
             return *this;
         }
 
-        constexpr auto operator*=(T s) noexcept -> Vec2 & {
-            x *= s;
-            y *= s;
+        constexpr auto operator*=(T s) noexcept -> Vec & {
+            for (usize i = 0; i < N; ++i) {
+                m_data[i] *= s;
+            }
             return *this;
         }
 
-        static constexpr auto lerp(Vec2 a, Vec2 b, T t) noexcept -> Vec2 {
+        constexpr auto operator/=(T s) noexcept -> Vec & {
+            for (usize i = 0; i < N; ++i) {
+                m_data[i] /= s;
+            }
+            return *this;
+        }
+
+        friend constexpr auto operator+(Vec lhs, const Vec &rhs) noexcept -> Vec {
+            lhs += rhs;
+            return lhs;
+        }
+
+        friend constexpr auto operator-(Vec lhs, const Vec &rhs) noexcept -> Vec {
+            lhs -= rhs;
+            return lhs;
+        }
+
+        friend constexpr auto operator*(Vec lhs, T rhs) noexcept -> Vec {
+            lhs *= rhs;
+            return lhs;
+        }
+
+        friend constexpr auto operator/(Vec lhs, T rhs) noexcept -> Vec {
+            lhs /= rhs;
+            return lhs;
+        }
+
+        constexpr auto operator-() const noexcept -> Vec {
+            Vec res;
+            for (usize i = 0; i < N; ++i) {
+                res.m_data[i] = -m_data[i];
+            }
+            return res;
+        }
+
+        constexpr auto dot(const Vec &v) const noexcept -> T {
+            T res{};
+            for (usize i = 0; i < N; ++i) {
+                res += m_data[i] * v.m_data[i];
+            }
+            return res;
+        }
+
+        constexpr auto len_sq() const noexcept -> T {
+            return dot(*this);
+        }
+
+        constexpr auto len() const noexcept -> T requires Floating<T> {
+            return std::sqrt(len_sq());
+        }
+
+        constexpr auto normalized() const noexcept -> Vec requires Floating<T> {
+            const auto l = len();
+            return l > T{0} ? *this / l : Vec{};
+        }
+
+        static constexpr auto lerp(const Vec &a, const Vec &b, T t) noexcept -> Vec {
             return a + (b - a) * t;
         }
 
-        constexpr bool operator==(const Vec2 &) const noexcept = default;
+        constexpr auto operator==(const Vec &) const noexcept -> bool = default;
+
+
+        // for structure binding
+        template<usize I>
+        constexpr auto get(this auto &&self) noexcept -> auto & {
+            return self.m_data[I];
+        }
     };
 
-    using Vec2i = Vec2<i32>;
-    using Vec2f = Vec2<f32>;
-    using Vec2d = Vec2<f64>;
+    using Vec2i = Vec<i32, 2>;
+    using Vec2f = Vec<f32, 2>;
+    using Vec3f = Vec<f32, 3>;
 }
+
+template<sr::Number T, sr::usize N>
+    requires (N > 0)
+struct std::tuple_size<sr::Vec<T, N> > : std::integral_constant<std::size_t, N> {
+};
+
+template<std::size_t I, sr::Number T, sr::usize N>
+    requires (N > 0)
+struct std::tuple_element<I, sr::Vec<T, N> > {
+    using type = T;
+};
