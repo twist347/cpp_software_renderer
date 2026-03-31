@@ -125,7 +125,6 @@ namespace sr {
 
         constexpr auto operator==(const Vec &) const noexcept -> bool = default;
 
-
         // for structure binding
         template<usize I>
         constexpr auto get(this auto &&self) noexcept -> auto & {
@@ -137,6 +136,8 @@ namespace sr {
     using Vec2f = Vec<f32, 2>;
     using Vec3f = Vec<f32, 3>;
 }
+
+// for structure bindings
 
 template<sr::Number T, sr::usize N>
     requires (N > 0)

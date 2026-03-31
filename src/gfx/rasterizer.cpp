@@ -1,13 +1,11 @@
 #include "sr/gfx/rasterizer.h"
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <vector>
 
 namespace sr::raster {
-    auto draw_pixel(FrameBuffer &fb, i32 x, i32 y, Color c) noexcept -> void {
-        fb.set_pixel(x, y, c);
-    }
-
     // Bresenham's line algorithm
     auto draw_line(FrameBuffer &fb, Vec2i a, Vec2i b, Color c) noexcept -> void {
         auto [x0, y0] = a;
@@ -36,6 +34,37 @@ namespace sr::raster {
         }
     }
 
+    auto draw_line_ex(FrameBuffer &fb, Vec2i a, Vec2i b, f32 thickness, Color c) noexcept -> void {
+        if (thickness <= 1.0f) {
+            draw_line(fb, a, b, c);
+            return;
+        }
+
+        const f32 dx = static_cast<f32>(b.x() - a.x());
+        const f32 dy = static_cast<f32>(b.y() - a.y());
+        const f32 len = std::sqrt(dx * dx + dy * dy);
+        if (len < 1.0f) {
+            return;
+        }
+
+        const f32 half = thickness / 2.f;
+        const f32 nx = -dy / len * half;
+        const f32 ny = dx / len * half;
+
+        const std::array<Vec2i, 4> vertices = {
+            Vec2i{static_cast<i32>(static_cast<f32>(a.x()) + nx),
+                  static_cast<i32>(static_cast<f32>(a.y()) + ny)},
+            Vec2i{static_cast<i32>(static_cast<f32>(b.x()) + nx),
+                  static_cast<i32>(static_cast<f32>(b.y()) + ny)},
+            Vec2i{static_cast<i32>(static_cast<f32>(b.x()) - nx),
+                  static_cast<i32>(static_cast<f32>(b.y()) - ny)},
+            Vec2i{static_cast<i32>(static_cast<f32>(a.x()) - nx),
+                  static_cast<i32>(static_cast<f32>(a.y()) - ny)},
+        };
+
+        fill_polygon(fb, vertices, c);
+    }
+
     auto draw_rect(FrameBuffer &fb, Vec2i a, Vec2i b, Color c) noexcept -> void {
         auto [x0, y0] = a;
         auto [x1, y1] = b;
@@ -46,10 +75,10 @@ namespace sr::raster {
             std::swap(y0, y1);
         }
 
-        for (i32 x = x0; x <= x1; ++x) {
-            fb.set_pixel(x, y0, c);
-            fb.set_pixel(x, y1, c);
-        }
+        const u32 argb = c.to_argb();
+        fb.fill_hor_line(x0, x1, y0, argb);
+        fb.fill_hor_line(x0, x1, y1, argb);
+
         for (i32 y = y0 + 1; y < y1; ++y) {
             fb.set_pixel(x0, y, c);
             fb.set_pixel(x1, y, c);

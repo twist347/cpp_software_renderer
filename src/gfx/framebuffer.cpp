@@ -11,8 +11,7 @@ namespace sr {
         if (width <= 0 || height <= 0) {
             return std::unexpected{Error::InvalidDimensions};
         }
-        std::vector<u32> buf;
-        buf.resize(static_cast<std::size_t>(width) * height, 0);
+        std::vector<u32> buf(static_cast<std::size_t>(width) * height, 0);
         return FrameBuffer{width, height, std::move(buf)};
     }
 
@@ -48,11 +47,14 @@ namespace sr {
         if (x0 > x1) {
             std::swap(x0, x1);
         }
+
+        // clip
         x0 = std::max(x0, 0);
         x1 = std::min(x1, m_width - 1);
         if (x0 > x1) {
             return;
         }
+
         auto *row = m_buf.data() + static_cast<std::size_t>(y) * m_width;
         std::fill(row + x0, row + x1 + 1, argb);
     }

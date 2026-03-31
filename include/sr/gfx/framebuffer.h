@@ -27,8 +27,7 @@ namespace sr {
             return x >= 0 && x < m_width && y >= 0 && y < m_height;
         }
 
-        [[nodiscard]] auto data() const noexcept -> const u32 * { return m_buf.data(); }
-        [[nodiscard]] auto data() noexcept -> u32 * { return m_buf.data(); }
+        [[nodiscard]] auto data(this auto &self) noexcept { return self.m_buf.data(); }
         [[nodiscard]] auto span() const noexcept -> std::span<const u32> { return m_buf; }
 
         [[nodiscard]] auto width() const noexcept -> i32 { return m_width; }

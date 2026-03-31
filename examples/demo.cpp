@@ -1,49 +1,50 @@
-#include "sr/core/color.h"
-#include "sr/gfx/framebuffer.h"
-#include "sr/gfx/rasterizer.h"
-#include "sr/platform/window.h"
+#include "sr/sr.h"
 
-constexpr sr::i32 WIDTH = 800;
-constexpr sr::i32 HEIGHT = 600;
+constexpr sr::i32 WIDTH = 1920;
+constexpr sr::i32 HEIGHT = 1080;
 constexpr sr::u32 TARGET_FPS = 60;
 
 int main() {
     auto win = sr::unwrap(sr::Window::create("SR Demo", WIDTH, HEIGHT));
     auto fb = sr::unwrap(sr::FrameBuffer::create(WIDTH, HEIGHT));
+    sr::Renderer2D ren{fb};
 
     sr::Window::set_target_fps(TARGET_FPS);
 
     while (win.is_open()) {
-        fb.clear(sr::colors::black);
+        ren.clear();
 
-        // Row 1: rect, circle, ellipse
-        sr::raster::fill_rect(fb, {50, 50}, {200, 170}, sr::colors::red);
-        sr::raster::draw_rect(fb, {230, 50}, {380, 170}, sr::colors::green);
-        sr::raster::fill_circle(fb, {480, 110}, 60, sr::colors::blue);
-        sr::raster::draw_circle(fb, {620, 110}, 60, sr::colors::white);
-        sr::raster::fill_ellipse(fb, {480, 110}, 60, 40, sr::Color{0, 180, 180});
-        sr::raster::draw_ellipse(fb, {720, 110}, 50, 80, sr::Color{255, 200, 0});
+        // Row 1: rects, circles, ellipses
+        ren.fill_rect({80, 80}, {350, 280}, sr::colors::red);
+        ren.draw_rect({480, 80}, {750, 280}, sr::colors::green);
+        ren.fill_circle({1000, 180}, 120, sr::colors::blue);
+        ren.draw_circle({1300, 180}, 120, sr::colors::white);
+        ren.fill_ellipse({1600, 180}, 120, 80, sr::Color{0, 180, 180});
+        ren.draw_ellipse({1800, 180}, 80, 140, sr::Color{255, 200, 0});
 
         // Row 2: triangle, line
-        sr::raster::fill_triangle(fb, {100, 230}, {50, 370}, {200, 370},
-                                  sr::Color{255, 0, 255});
-        sr::raster::draw_line(fb, {250, 230}, {500, 370}, sr::Color{255, 255, 0});
+        ren.fill_triangle({200, 420}, {80, 680}, {400, 680}, sr::Color{255, 0, 255});
+        ren.draw_line({550, 420}, {950, 680}, sr::Color{255, 255, 0});
 
-        // Row 3: polygon
+        // Row 3: polygons
         constexpr sr::Vec2i star[] = {
-            {600, 250}, {620, 320}, {690, 320}, {635, 360},
-            {655, 430}, {600, 385}, {545, 430}, {565, 360},
-            {510, 320}, {580, 320},
+            {1200, 420}, {1240, 580}, {1400, 580}, {1275, 680},
+            {1320, 840}, {1200, 750}, {1080, 840}, {1125, 680},
+            {1000, 580}, {1160, 580},
         };
-        sr::raster::fill_polygon(fb, star, sr::Color{255, 180, 0});
-        sr::raster::draw_polygon(fb, star, sr::colors::white);
+        ren.fill_polygon(star, sr::Color{255, 180, 0});
+        ren.draw_polygon(star, sr::colors::white);
 
         constexpr sr::Vec2i hexagon[] = {
-            {175, 430}, {245, 460}, {245, 520},
-            {175, 550}, {105, 520}, {105, 460},
+            {350, 780}, {490, 840}, {490, 960},
+            {350, 1020}, {210, 960}, {210, 840},
         };
-        sr::raster::fill_polygon(fb, hexagon, sr::Color{100, 50, 200});
-        sr::raster::draw_polygon(fb, hexagon, sr::colors::white);
+        ren.fill_polygon(hexagon, sr::Color{100, 50, 200});
+        ren.draw_polygon(hexagon, sr::colors::white);
+
+        // Rotated rect
+        ren.fill_rect_ex({1550, 650}, {350, 180}, {175, 90}, 0.5f, sr::Color{0, 200, 100});
+        ren.draw_rect_ex({1550, 650}, {350, 180}, {175, 90}, 0.5f, sr::colors::white);
 
         win.present(fb);
     }

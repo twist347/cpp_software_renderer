@@ -12,7 +12,7 @@ namespace sr {
         constexpr Color() noexcept = default;
 
         constexpr Color(u8 r, u8 g, u8 b, u8 a = 255) noexcept
-            : r(r), g(g), b(b), a(a) {
+            : r{r}, g{g}, b{b}, a{a} {
         }
 
         [[nodiscard]] constexpr auto to_argb() const noexcept -> u32 {

@@ -4,7 +4,7 @@
 #include <cassert>
 #include <utility>
 
-#include "MiniFB.h"
+#include <MiniFB.h>
 
 namespace sr {
     Window::Window(mfb_window *win, i32 w, i32 h) noexcept

@@ -8,9 +8,8 @@
 #include "sr/gfx/framebuffer.h"
 
 namespace sr::raster {
-    auto draw_pixel(FrameBuffer &fb, i32 x, i32 y, Color c) noexcept -> void;
-
     auto draw_line(FrameBuffer &fb, Vec2i a, Vec2i b, Color c) noexcept -> void;
+    auto draw_line_ex(FrameBuffer &fb, Vec2i a, Vec2i b, f32 thickness, Color c) noexcept -> void;
 
     auto draw_rect(FrameBuffer &fb, Vec2i a, Vec2i b, Color c) noexcept -> void;
     auto fill_rect(FrameBuffer &fb, Vec2i a, Vec2i b, Color c) noexcept -> void;

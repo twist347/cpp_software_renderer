@@ -15,6 +15,7 @@ set(SR_CORE_SOURCES
 set(SR_GFX_SOURCES
         src/gfx/framebuffer.cpp
         src/gfx/rasterizer.cpp
+        src/gfx/renderer.cpp
 )
 
 set(SR_PLATFORM_SOURCES
