@@ -10,14 +10,6 @@ A from-scratch 2D software renderer. No GPU, no OpenGL — just pixels.
 - **Windowing**: minifb backend, keyboard/mouse input, delta time, target FPS
 - **Core**: `Vec<T,N>` template, `Color` (ARGB), `AABB2D`, `std::expected` error handling
 
-## Architecture
-
-```
-Renderer2D          high-level API (user-facing)
-  └─ raster::       low-level primitives (free functions)
-       └─ FrameBuffer   pixel buffer (u32 ARGB)
-```
-
 ## Build
 
 ```bash
