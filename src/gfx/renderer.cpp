@@ -6,6 +6,7 @@
 
 namespace sr {
     static auto rotate_point(Vec2f p, Vec2f origin, f32 sin_a, f32 cos_a) noexcept -> Vec2i;
+    static auto rotated_rect_vertices(Vec2f pos, Vec2f size, Vec2f origin, f32 angle) noexcept -> std::array<Vec2i, 4>;
 
     Renderer2D::Renderer2D(FrameBuffer &fb) noexcept
         : m_fb{fb} {
@@ -64,32 +65,12 @@ namespace sr {
     }
 
     auto Renderer2D::draw_rect_ex(Vec2f pos, Vec2f size, Vec2f origin, f32 angle, Color c) noexcept -> void {
-        const f32 sin_a = std::sin(angle);
-        const f32 cos_a = std::cos(angle);
-        const Vec2f o = pos + origin;
-
-        const std::array<Vec2i, 4> vertices = {
-            rotate_point(pos, o, sin_a, cos_a),
-            rotate_point({pos.x() + size.x(), pos.y()}, o, sin_a, cos_a),
-            rotate_point(pos + size, o, sin_a, cos_a),
-            rotate_point({pos.x(), pos.y() + size.y()}, o, sin_a, cos_a),
-        };
-
+        const auto vertices = rotated_rect_vertices(pos, size, origin, angle);
         raster::draw_polygon(m_fb, vertices, c);
     }
 
     auto Renderer2D::fill_rect_ex(Vec2f pos, Vec2f size, Vec2f origin, f32 angle, Color c) noexcept -> void {
-        const f32 sin_a = std::sin(angle);
-        const f32 cos_a = std::cos(angle);
-        const Vec2f o = pos + origin;
-
-        const std::array<Vec2i, 4> vertices = {
-            rotate_point(pos, o, sin_a, cos_a),
-            rotate_point({pos.x() + size.x(), pos.y()}, o, sin_a, cos_a),
-            rotate_point(pos + size, o, sin_a, cos_a),
-            rotate_point({pos.x(), pos.y() + size.y()}, o, sin_a, cos_a),
-        };
-
+        const auto vertices = rotated_rect_vertices(pos, size, origin, angle);
         raster::fill_polygon(m_fb, vertices, c);
     }
 
@@ -109,6 +90,19 @@ namespace sr {
         return {
             static_cast<i32>(origin.x() + dx * cos_a - dy * sin_a),
             static_cast<i32>(origin.y() + dx * sin_a + dy * cos_a)
+        };
+    }
+
+    static auto rotated_rect_vertices(Vec2f pos, Vec2f size, Vec2f origin, f32 angle) noexcept -> std::array<Vec2i, 4> {
+        const f32 sin_a = std::sin(angle);
+        const f32 cos_a = std::cos(angle);
+        const Vec2f o = pos + origin;
+
+        return {
+            rotate_point(pos, o, sin_a, cos_a),
+            rotate_point({pos.x() + size.x(), pos.y()}, o, sin_a, cos_a),
+            rotate_point(pos + size, o, sin_a, cos_a),
+            rotate_point({pos.x(), pos.y() + size.y()}, o, sin_a, cos_a),
         };
     }
 }
