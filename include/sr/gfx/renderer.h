@@ -6,6 +6,7 @@
 #include "sr/core/color.h"
 #include "sr/core/vec.h"
 #include "sr/gfx/framebuffer.h"
+#include "sr/gfx/texture.h"
 
 namespace sr {
     class Renderer2D {
@@ -36,6 +37,10 @@ namespace sr {
         // extended
         auto draw_rect_ex(Vec2f pos, Vec2f size, Vec2f origin, f32 angle, Color c) noexcept -> void;
         auto fill_rect_ex(Vec2f pos, Vec2f size, Vec2f origin, f32 angle, Color c) noexcept -> void;
+
+        // sprites
+        auto draw_sprite(const Texture &tex, Vec2i pos) noexcept -> void;
+        auto draw_sprite_ex(const Texture &tex, Vec2f pos, Vec2f origin, Vec2f scale, f32 angle) noexcept -> void;
 
         [[nodiscard]] auto framebuffer() noexcept -> FrameBuffer & { return m_fb; }
         [[nodiscard]] auto framebuffer() const noexcept -> const FrameBuffer & { return m_fb; }

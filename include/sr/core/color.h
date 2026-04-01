@@ -39,10 +39,10 @@ namespace sr {
     };
 
     namespace colors {
-        static constexpr auto black = Color{0, 0, 0};
-        static constexpr auto white = Color{255, 255, 255};
-        static constexpr auto red = Color{255, 0, 0};
-        static constexpr auto green = Color{0, 255, 0};
-        static constexpr auto blue = Color{0, 0, 255};
+        inline constexpr auto black = Color{0, 0, 0};
+        inline constexpr auto white = Color{255, 255, 255};
+        inline constexpr auto red = Color{255, 0, 0};
+        inline constexpr auto green = Color{0, 255, 0};
+        inline constexpr auto blue = Color{0, 0, 255};
     }
 }

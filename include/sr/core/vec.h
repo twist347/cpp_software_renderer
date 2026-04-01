@@ -30,15 +30,15 @@ namespace sr {
         constexpr Vec(Args... args) noexcept : m_data{static_cast<T>(args)...} {
         }
 
-        constexpr auto x(this auto &&self) noexcept -> auto & {
+        constexpr auto x(this auto &&self) noexcept -> auto & requires(N > 0) {
             return self.m_data[0];
         }
 
-        constexpr auto y(this auto &&self) noexcept -> auto & {
+        constexpr auto y(this auto &&self) noexcept -> auto & requires(N > 1) {
             return self.m_data[1];
         }
 
-        constexpr auto z(this auto &&self) noexcept -> auto & {
+        constexpr auto z(this auto &&self) noexcept -> auto & requires(N > 2) {
             return self.m_data[2];
         }
 

@@ -25,7 +25,9 @@ namespace sr {
           m_timer{std::exchange(other.m_timer, nullptr)},
           m_width{other.m_width},
           m_height{other.m_height},
-          m_dt{other.m_dt} {
+          m_dt{other.m_dt},
+          m_prev_keys{other.m_prev_keys},
+          m_prev_mouse{other.m_prev_mouse} {
     }
 
     auto Window::operator=(Window &&other) noexcept -> Window & {
@@ -41,6 +43,8 @@ namespace sr {
             m_width = other.m_width;
             m_height = other.m_height;
             m_dt = other.m_dt;
+            m_prev_keys = other.m_prev_keys;
+            m_prev_mouse = other.m_prev_mouse;
         }
         return *this;
     }
@@ -60,41 +64,47 @@ namespace sr {
     auto Window::key_down(Key key) const noexcept -> bool {
         assert(m_window);
         const auto *buf = mfb_get_key_buffer(m_window);
-        return buf && buf[static_cast<i32>(key)];
+        assert(buf);
+        return buf[static_cast<i32>(key)];
     }
 
     auto Window::key_pressed(Key key) const noexcept -> bool {
         assert(m_window);
         const auto *buf = mfb_get_key_buffer(m_window);
+        assert(buf);
         const auto k = static_cast<i32>(key);
-        return buf && buf[k] && !m_prev_keys[k];
+        return buf[k] && !m_prev_keys[k];
     }
 
     auto Window::key_released(Key key) const noexcept -> bool {
         assert(m_window);
         const auto *buf = mfb_get_key_buffer(m_window);
+        assert(buf);
         const auto k = static_cast<i32>(key);
-        return buf && !buf[k] && m_prev_keys[k];
+        return !buf[k] && m_prev_keys[k];
     }
 
     auto Window::mouse_down(MouseButton btn) const noexcept -> bool {
         assert(m_window);
         const auto *buf = mfb_get_mouse_button_buffer(m_window);
-        return buf && buf[static_cast<u8>(btn)];
+        assert(buf);
+        return buf[static_cast<u8>(btn)];
     }
 
     auto Window::mouse_pressed(MouseButton btn) const noexcept -> bool {
         assert(m_window);
         const auto *buf = mfb_get_mouse_button_buffer(m_window);
+        assert(buf);
         const auto b = static_cast<u8>(btn);
-        return buf && buf[b] && !m_prev_mouse[b];
+        return buf[b] && !m_prev_mouse[b];
     }
 
     auto Window::mouse_released(MouseButton btn) const noexcept -> bool {
         assert(m_window);
         const auto *buf = mfb_get_mouse_button_buffer(m_window);
+        assert(buf);
         const auto b = static_cast<u8>(btn);
-        return buf && !buf[b] && m_prev_mouse[b];
+        return !buf[b] && m_prev_mouse[b];
     }
 
     auto Window::mouse_pos() const noexcept -> Vec2f {

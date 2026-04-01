@@ -93,6 +93,14 @@ namespace sr {
         raster::fill_polygon(m_fb, vertices, c);
     }
 
+    auto Renderer2D::draw_sprite(const Texture &tex, Vec2i pos) noexcept -> void {
+        raster::blit(m_fb, tex, pos);
+    }
+
+    auto Renderer2D::draw_sprite_ex(const Texture &tex, Vec2f pos, Vec2f origin, Vec2f scale, f32 angle) noexcept -> void {
+        raster::blit_ex(m_fb, tex, pos, origin, scale, angle);
+    }
+
     // inner funcs
 
     static auto rotate_point(Vec2f p, Vec2f origin, f32 sin_a, f32 cos_a) noexcept -> Vec2i {

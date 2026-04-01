@@ -9,6 +9,7 @@
 
 // gfx
 #include "sr/gfx/framebuffer.h"
+#include "sr/gfx/texture.h"
 #include "sr/gfx/rasterizer.h"
 #include "sr/gfx/renderer.h"
 

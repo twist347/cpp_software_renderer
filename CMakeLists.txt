@@ -16,6 +16,11 @@ set(SR_GFX_SOURCES
         src/gfx/framebuffer.cpp
         src/gfx/rasterizer.cpp
         src/gfx/renderer.cpp
+        src/gfx/texture.cpp
+)
+
+set(SR_THIRDPARTY_SOURCES
+        src/thirdparty/stb_image_impl.cpp
 )
 
 set(SR_PLATFORM_SOURCES
@@ -26,10 +31,12 @@ set(SR_SOURCES
         ${SR_CORE_SOURCES}
         ${SR_GFX_SOURCES}
         ${SR_PLATFORM_SOURCES}
+        ${SR_THIRDPARTY_SOURCES}
 )
 
 add_library(sr STATIC ${SR_SOURCES})
 target_include_directories(sr PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(sr PRIVATE ${PROJECT_SOURCE_DIR}/thirdparty)
 target_link_libraries(sr PRIVATE minifb::minifb)
 target_compile_options(sr PRIVATE -Wall -Wextra -pedantic)
 
