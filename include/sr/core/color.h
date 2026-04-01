@@ -31,6 +31,7 @@ namespace sr {
             };
         }
 
+        // Porter-Duff "source over"
         [[nodiscard]] auto blend_over(Color dst) const noexcept -> Color;
 
         [[nodiscard]] static auto lerp(Color a, Color b, f32 t) noexcept -> Color;

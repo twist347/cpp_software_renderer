@@ -25,7 +25,8 @@ namespace sr {
 
         [[nodiscard]] auto is_open() const noexcept -> bool { return m_window != nullptr; }
 
-        auto present(const FrameBuffer &fb) noexcept -> void;
+        // non-const: minifb expects void*, not const void*
+        auto present(FrameBuffer &fb) noexcept -> void;
 
         static auto set_target_fps(u32 fps) noexcept -> void;
 

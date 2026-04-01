@@ -6,7 +6,8 @@
 #include <vector>
 
 namespace sr::raster {
-    // Bresenham's line algorithm
+    static auto blend_pixel(FrameBuffer &fb, i32 x, i32 y, Color src) noexcept -> void;
+
     auto draw_line(FrameBuffer &fb, Vec2i a, Vec2i b, Color c) noexcept -> void {
         auto [x0, y0] = a;
         const auto [x1, y1] = b;
@@ -52,14 +53,22 @@ namespace sr::raster {
         const f32 ny = dx / len * half;
 
         const std::array<Vec2i, 4> vertices = {
-            Vec2i{static_cast<i32>(static_cast<f32>(a.x()) + nx),
-                  static_cast<i32>(static_cast<f32>(a.y()) + ny)},
-            Vec2i{static_cast<i32>(static_cast<f32>(b.x()) + nx),
-                  static_cast<i32>(static_cast<f32>(b.y()) + ny)},
-            Vec2i{static_cast<i32>(static_cast<f32>(b.x()) - nx),
-                  static_cast<i32>(static_cast<f32>(b.y()) - ny)},
-            Vec2i{static_cast<i32>(static_cast<f32>(a.x()) - nx),
-                  static_cast<i32>(static_cast<f32>(a.y()) - ny)},
+            Vec2i{
+                static_cast<i32>(static_cast<f32>(a.x()) + nx),
+                static_cast<i32>(static_cast<f32>(a.y()) + ny)
+            },
+            Vec2i{
+                static_cast<i32>(static_cast<f32>(b.x()) + nx),
+                static_cast<i32>(static_cast<f32>(b.y()) + ny)
+            },
+            Vec2i{
+                static_cast<i32>(static_cast<f32>(b.x()) - nx),
+                static_cast<i32>(static_cast<f32>(b.y()) - ny)
+            },
+            Vec2i{
+                static_cast<i32>(static_cast<f32>(a.x()) - nx),
+                static_cast<i32>(static_cast<f32>(a.y()) - ny)
+            },
         };
 
         fill_polygon(fb, vertices, c);
@@ -104,7 +113,6 @@ namespace sr::raster {
         }
     }
 
-    // Midpoint circle algorithm
     auto draw_circle(FrameBuffer &fb, Vec2i center, i32 r, Color c) noexcept -> void {
         if (r <= 0) {
             return;
@@ -164,7 +172,6 @@ namespace sr::raster {
         }
     }
 
-    // Midpoint ellipse algorithm
     auto draw_ellipse(FrameBuffer &fb, Vec2i center, i32 rx, i32 ry, Color c) noexcept -> void {
         if (rx <= 0 || ry <= 0) {
             return;
@@ -276,7 +283,6 @@ namespace sr::raster {
         draw_line(fb, c, a, col);
     }
 
-    // Scanline triangle fill
     auto fill_triangle(FrameBuffer &fb, Vec2i a, Vec2i b, Vec2i c, Color col) noexcept -> void {
         if (a.y() > b.y()) {
             std::swap(a, b);
@@ -327,7 +333,6 @@ namespace sr::raster {
         }
     }
 
-    // Scanline fill with sorted edge intersections (even-odd rule)
     auto fill_polygon(FrameBuffer &fb, std::span<const Vec2i> points, Color c) noexcept -> void {
         const auto n = points.size();
         if (n < 3) {
@@ -336,7 +341,7 @@ namespace sr::raster {
 
         i32 y_min = points[0].y();
         i32 y_max = points[0].y();
-        for (const auto &[x, y] : points) {
+        for (const auto &[x, y]: points) {
             y_min = std::min(y_min, y);
             y_max = std::max(y_max, y);
         }
@@ -388,20 +393,13 @@ namespace sr::raster {
 
         for (i32 sy = y0; sy < y1; ++sy) {
             for (i32 sx = x0; sx < x1; ++sx) {
-                const auto src = Color::from_argb(tex.get_pixel_argb(sx, sy));
-                if (src.a == 0) {
-                    continue;
-                }
-                if (src.a == 255) {
-                    fb.set_pixel(px + sx, py + sy, src);
-                } else {
-                    fb.set_pixel(px + sx, py + sy, src.blend_over(fb.get_pixel(px + sx, py + sy)));
-                }
+                blend_pixel(fb, px + sx, py + sy, Color::from_argb(tex.get_pixel_argb(sx, sy)));
             }
         }
     }
 
-    auto blit_ex(FrameBuffer &fb, const Texture &tex, Vec2f pos, Vec2f origin, Vec2f scale, f32 angle) noexcept -> void {
+    auto blit_ex(FrameBuffer &fb, const Texture &tex, Vec2f pos, Vec2f origin, Vec2f scale,
+                 f32 angle) noexcept -> void {
         const f32 sx = scale.x();
         const f32 sy = scale.y();
         if (sx == 0.f || sy == 0.f) {
@@ -421,7 +419,7 @@ namespace sr::raster {
         };
 
         f32 min_x = 1e9f, min_y = 1e9f, max_x = -1e9f, max_y = -1e9f;
-        for (const auto &corner : corners) {
+        for (const auto &corner: corners) {
             const f32 dx = corner.x() - origin.x() * std::abs(sx);
             const f32 dy = corner.y() - origin.y() * std::abs(sy);
             const f32 rx = pos.x() + dx * cos_a - dy * sin_a;
@@ -458,17 +456,20 @@ namespace sr::raster {
                 const i32 ity = static_cast<i32>(std::floor(ty));
 
                 if (tex.in_bounds(itx, ity)) {
-                    const auto src = Color::from_argb(tex.get_pixel_argb(itx, ity));
-                    if (src.a == 0) {
-                        continue;
-                    }
-                    if (src.a == 255) {
-                        fb.set_pixel(dx, dy, src);
-                    } else {
-                        fb.set_pixel(dx, dy, src.blend_over(fb.get_pixel(dx, dy)));
-                    }
+                    blend_pixel(fb, dx, dy, Color::from_argb(tex.get_pixel_argb(itx, ity)));
                 }
             }
+        }
+    }
+
+    static auto blend_pixel(FrameBuffer &fb, i32 x, i32 y, Color src) noexcept -> void {
+        if (src.a == 0) {
+            return;
+        }
+        if (src.a == 255) {
+            fb.set_pixel(x, y, src);
+        } else {
+            fb.set_pixel(x, y, src.blend_over(fb.get_pixel(x, y)));
         }
     }
 }

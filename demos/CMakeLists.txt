@@ -1,0 +1,2 @@
+add_subdirectory(01_primitives)
+add_subdirectory(02_sprites)

@@ -2,10 +2,11 @@
 
 constexpr sr::i32 WIDTH = 1920;
 constexpr sr::i32 HEIGHT = 1080;
+constexpr auto WIN_TITLE = "SR Primitives";
 constexpr sr::u32 TARGET_FPS = 60;
 
 int main() {
-    auto win = sr::unwrap(sr::Window::create("SR Demo", WIDTH, HEIGHT));
+    auto win = sr::unwrap(sr::Window::create(WIN_TITLE, WIDTH, HEIGHT));
     auto fb = sr::unwrap(sr::FrameBuffer::create(WIDTH, HEIGHT));
     sr::Renderer2D ren{fb};
 

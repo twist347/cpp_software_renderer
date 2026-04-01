@@ -40,4 +40,4 @@ target_include_directories(sr PRIVATE ${PROJECT_SOURCE_DIR}/thirdparty)
 target_link_libraries(sr PRIVATE minifb::minifb)
 target_compile_options(sr PRIVATE -Wall -Wextra -pedantic)
 
-add_subdirectory(examples)
+add_subdirectory(demos)

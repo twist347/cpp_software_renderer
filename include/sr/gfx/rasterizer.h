@@ -9,22 +9,27 @@
 #include "sr/gfx/texture.h"
 
 namespace sr::raster {
+    // Bresenham's line algorithm
     auto draw_line(FrameBuffer &fb, Vec2i a, Vec2i b, Color c) noexcept -> void;
     auto draw_line_ex(FrameBuffer &fb, Vec2i a, Vec2i b, f32 thickness, Color c) noexcept -> void;
 
     auto draw_rect(FrameBuffer &fb, Vec2i a, Vec2i b, Color c) noexcept -> void;
     auto fill_rect(FrameBuffer &fb, Vec2i a, Vec2i b, Color c) noexcept -> void;
 
+    // Midpoint circle algorithm
     auto draw_circle(FrameBuffer &fb, Vec2i center, i32 r, Color c) noexcept -> void;
     auto fill_circle(FrameBuffer &fb, Vec2i center, i32 r, Color c) noexcept -> void;
 
+    // Midpoint ellipse algorithm
     auto draw_ellipse(FrameBuffer &fb, Vec2i center, i32 rx, i32 ry, Color c) noexcept -> void;
     auto fill_ellipse(FrameBuffer &fb, Vec2i center, i32 rx, i32 ry, Color c) noexcept -> void;
 
     auto draw_triangle(FrameBuffer &fb, Vec2i a, Vec2i b, Vec2i c, Color col) noexcept -> void;
+    // Scanline fill
     auto fill_triangle(FrameBuffer &fb, Vec2i a, Vec2i b, Vec2i c, Color col) noexcept -> void;
 
     auto draw_polygon(FrameBuffer &fb, std::span<const Vec2i> points, Color c) noexcept -> void;
+    // Scanline fill, even-odd rule
     auto fill_polygon(FrameBuffer &fb, std::span<const Vec2i> points, Color c) noexcept -> void;
 
     // bit block transfer (BitBLT)

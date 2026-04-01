@@ -1,0 +1,4 @@
+add_executable(sprites sprites.cpp)
+target_link_libraries(sprites PRIVATE sr)
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/img.png DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

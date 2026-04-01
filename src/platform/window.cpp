@@ -134,7 +134,7 @@ namespace sr {
     }
 
     // No assert: mfb_update_ex/mfb_wait_sync may destroy the window at runtime
-    auto Window::present(const FrameBuffer &fb) noexcept -> void {
+    auto Window::present(FrameBuffer &fb) noexcept -> void {
         if (!m_window) {
             return;
         }
@@ -142,7 +142,7 @@ namespace sr {
         update_input();
         const auto st = mfb_update_ex(
             m_window,
-            const_cast<void *>(static_cast<const void *>(fb.data())),
+            fb.data(),
             static_cast<unsigned>(fb.width()),
             static_cast<unsigned>(fb.height())
         );
