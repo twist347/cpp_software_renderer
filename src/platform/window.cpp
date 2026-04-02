@@ -2,13 +2,14 @@
 
 #include <algorithm>
 #include <cassert>
+#include <format>
 #include <utility>
 
 #include <MiniFB.h>
 
 namespace sr {
-    Window::Window(mfb_window *win, i32 w, i32 h) noexcept
-        : m_window{win}, m_timer{mfb_timer_create()}, m_width{w}, m_height{h} {
+    Window::Window(mfb_window *win, i32 w, i32 h, std::string title) noexcept
+        : m_window{win}, m_timer{mfb_timer_create()}, m_width{w}, m_height{h}, m_title{std::move(title)} {
     }
 
     Window::~Window() noexcept {
@@ -26,6 +27,7 @@ namespace sr {
           m_width{other.m_width},
           m_height{other.m_height},
           m_dt{other.m_dt},
+          m_title{std::move(other.m_title)},
           m_prev_keys{other.m_prev_keys},
           m_prev_mouse{other.m_prev_mouse} {
     }
@@ -43,6 +45,7 @@ namespace sr {
             m_width = other.m_width;
             m_height = other.m_height;
             m_dt = other.m_dt;
+            m_title = std::move(other.m_title);
             m_prev_keys = other.m_prev_keys;
             m_prev_mouse = other.m_prev_mouse;
         }
@@ -54,11 +57,17 @@ namespace sr {
         if (!win) {
             return std::unexpected{Error::WindowCreationFailed};
         }
-        return Window{win, width, height};
+        return Window{win, width, height, std::string{title}};
     }
 
     auto Window::set_target_fps(u32 fps) noexcept -> void {
         mfb_set_target_fps(fps);
+    }
+
+    auto Window::set_title(const char *title) noexcept -> void {
+        assert(m_window);
+        m_title = title;
+        mfb_set_title(m_window, title);
     }
 
     auto Window::key_down(Key key) const noexcept -> bool {
@@ -133,12 +142,29 @@ namespace sr {
         }
     }
 
+    auto Window::update_dt() noexcept -> void {
+        m_dt = static_cast<f32>(mfb_timer_delta(m_timer));
+    }
+
+    auto Window::update_fps_title() noexcept -> void {
+        m_fps_accum += m_dt;
+        ++m_fps_frames;
+        if (m_fps_accum >= 0.5f) {
+            const auto fps = static_cast<i32>(static_cast<f64>(m_fps_frames) / static_cast<f64>(m_fps_accum));
+            const auto title = std::format("{} [{} FPS]", m_title, fps);
+            mfb_set_title(m_window, title.c_str());
+            m_fps_accum = 0.0f;
+            m_fps_frames = 0;
+        }
+    }
+
     // No assert: mfb_update_ex/mfb_wait_sync may destroy the window at runtime
     auto Window::present(FrameBuffer &fb) noexcept -> void {
         if (!m_window) {
             return;
         }
-        m_dt = static_cast<f32>(mfb_timer_delta(m_timer));
+        update_dt();
+        update_fps_title();
         update_input();
         const auto st = mfb_update_ex(
             m_window,
@@ -146,7 +172,7 @@ namespace sr {
             static_cast<unsigned>(fb.width()),
             static_cast<unsigned>(fb.height())
         );
-        if (st != STATE_OK) {
+        if (st != MFB_STATE_OK) {
             m_window = nullptr;
             return;
         }

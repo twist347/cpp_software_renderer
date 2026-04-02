@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <string>
 
 #include "sr/core/types.h"
 #include "sr/core/vec.h"
@@ -41,14 +42,18 @@ namespace sr {
         [[nodiscard]] auto mouse_pos() const noexcept -> Vec2f;
         [[nodiscard]] auto mouse_scroll_y() const noexcept -> f32;
 
+        auto set_title(const char *title) noexcept -> void;
+
         [[nodiscard]] auto dt() const noexcept -> f32 { return m_dt; }
 
         [[nodiscard]] auto width() const noexcept -> i32 { return m_width; }
         [[nodiscard]] auto height() const noexcept -> i32 { return m_height; }
 
     private:
-        Window(mfb_window *win, i32 w, i32 h) noexcept;
+        Window(mfb_window *win, i32 w, i32 h, std::string title) noexcept;
 
+        auto update_dt() noexcept -> void;
+        auto update_fps_title() noexcept -> void;
         auto update_input() noexcept -> void;
 
         static constexpr i32 MAX_KEYS = 349;
@@ -59,6 +64,9 @@ namespace sr {
         i32 m_width{};
         i32 m_height{};
         f32 m_dt{};
+        f32 m_fps_accum{};
+        i32 m_fps_frames{};
+        std::string m_title;
         std::array<u8, MAX_KEYS> m_prev_keys{};
         std::array<u8, MAX_MOUSE_BUTTONS> m_prev_mouse{};
     };
