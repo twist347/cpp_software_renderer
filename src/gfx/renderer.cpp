@@ -88,8 +88,8 @@ namespace sr {
         const f32 dx = p.x() - origin.x();
         const f32 dy = p.y() - origin.y();
         return {
-            static_cast<i32>(origin.x() + dx * cos_a - dy * sin_a),
-            static_cast<i32>(origin.y() + dx * sin_a + dy * cos_a)
+            static_cast<i32>(std::lround(origin.x() + dx * cos_a - dy * sin_a)),
+            static_cast<i32>(std::lround(origin.y() + dx * sin_a + dy * cos_a))
         };
     }
 

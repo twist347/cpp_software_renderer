@@ -85,6 +85,11 @@ namespace sr {
             return lhs;
         }
 
+        friend constexpr auto operator*(T lhs, Vec rhs) noexcept -> Vec {
+            rhs *= lhs;
+            return rhs;
+        }
+
         friend constexpr auto operator/(Vec lhs, T rhs) noexcept -> Vec {
             lhs /= rhs;
             return lhs;

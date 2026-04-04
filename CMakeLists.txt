@@ -3,14 +3,12 @@ cmake_minimum_required(VERSION 3.21)
 project(cpp_software_renderer)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(MINIFB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/minifb-0.10.1)
-
-set(SR_CORE_SOURCES
-        src/core/color.cpp
-)
 
 set(SR_GFX_SOURCES
         src/gfx/framebuffer.cpp
@@ -28,7 +26,6 @@ set(SR_PLATFORM_SOURCES
 )
 
 set(SR_SOURCES
-        ${SR_CORE_SOURCES}
         ${SR_GFX_SOURCES}
         ${SR_PLATFORM_SOURCES}
         ${SR_THIRDPARTY_SOURCES}

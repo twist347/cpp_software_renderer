@@ -31,10 +31,27 @@ namespace sr {
             };
         }
 
-        // Porter-Duff "source over"
-        [[nodiscard]] auto blend_over(Color dst) const noexcept -> Color;
+        // Porter-Duff "source over"; integer-only — avoids float conversions in hot path
+        [[nodiscard]] constexpr auto blend_over(Color dst) const noexcept -> Color {
+            const u32 sa = a;
+            const u32 inv = 255 - sa;
+            return {
+                static_cast<u8>((r * sa + dst.r * inv + 127) / 255),
+                static_cast<u8>((g * sa + dst.g * inv + 127) / 255),
+                static_cast<u8>((b * sa + dst.b * inv + 127) / 255),
+                static_cast<u8>((a * 255 + dst.a * inv + 127) / 255)
+            };
+        }
 
-        [[nodiscard]] static auto lerp(Color a, Color b, f32 t) noexcept -> Color;
+        [[nodiscard]] static constexpr auto lerp(Color a, Color b, f32 t) noexcept -> Color {
+            const f32 inv = 1.f - t;
+            return {
+                static_cast<u8>(static_cast<f32>(a.r) * inv + static_cast<f32>(b.r) * t + 0.5f),
+                static_cast<u8>(static_cast<f32>(a.g) * inv + static_cast<f32>(b.g) * t + 0.5f),
+                static_cast<u8>(static_cast<f32>(a.b) * inv + static_cast<f32>(b.b) * t + 0.5f),
+                static_cast<u8>(static_cast<f32>(a.a) * inv + static_cast<f32>(b.a) * t + 0.5f)
+            };
+        }
 
         constexpr bool operator==(const Color &) const noexcept = default;
     };

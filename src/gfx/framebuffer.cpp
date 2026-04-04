@@ -40,23 +40,59 @@ namespace sr {
         return {};
     }
 
-    auto FrameBuffer::fill_hor_line(i32 x0, i32 x1, i32 y, u32 argb) noexcept -> void {
+    auto FrameBuffer::clip_hor_line(i32 &x0, i32 &x1, i32 y) noexcept -> u32 * {
         if (y < 0 || y >= m_height) {
-            return;
+            return nullptr;
         }
         if (x0 > x1) {
             std::swap(x0, x1);
         }
-
-        // clip
         x0 = std::max(x0, 0);
         x1 = std::min(x1, m_width - 1);
         if (x0 > x1) {
+            return nullptr;
+        }
+        return m_buf.data() + static_cast<std::size_t>(y) * m_width;
+    }
+
+    auto FrameBuffer::fill_hor_line(i32 x0, i32 x1, i32 y, u32 argb) noexcept -> void {
+        if (auto *row = clip_hor_line(x0, x1, y)) {
+            std::fill(row + x0, row + x1 + 1, argb);
+        }
+    }
+
+    auto FrameBuffer::fill_hor_line(i32 x0, i32 x1, i32 y, Color c) noexcept -> void {
+        if (c.a == 0) {
             return;
         }
+        if (c.a == 255) {
+            fill_hor_line(x0, x1, y, c.to_argb());
+            return;
+        }
+        if (auto *row = clip_hor_line(x0, x1, y)) {
+            for (i32 x = x0; x <= x1; ++x) {
+                row[x] = c.blend_over(Color::from_argb(row[x])).to_argb();
+            }
+        }
+    }
 
+    auto FrameBuffer::fill_hor_line_unchecked(i32 x0, i32 x1, i32 y, u32 argb) noexcept -> void {
         auto *row = m_buf.data() + static_cast<std::size_t>(y) * m_width;
         std::fill(row + x0, row + x1 + 1, argb);
+    }
+
+    auto FrameBuffer::fill_hor_line_unchecked(i32 x0, i32 x1, i32 y, Color c) noexcept -> void {
+        if (c.a == 0) {
+            return;
+        }
+        if (c.a == 255) {
+            fill_hor_line_unchecked(x0, x1, y, c.to_argb());
+            return;
+        }
+        auto *row = m_buf.data() + static_cast<std::size_t>(y) * m_width;
+        for (i32 x = x0; x <= x1; ++x) {
+            row[x] = c.blend_over(Color::from_argb(row[x])).to_argb();
+        }
     }
 
     auto FrameBuffer::resize(i32 w, i32 h) noexcept -> Status {

@@ -27,6 +27,8 @@ namespace sr {
           m_width{other.m_width},
           m_height{other.m_height},
           m_dt{other.m_dt},
+          m_fps_accum{other.m_fps_accum},
+          m_fps_frames{other.m_fps_frames},
           m_title{std::move(other.m_title)},
           m_prev_keys{other.m_prev_keys},
           m_prev_mouse{other.m_prev_mouse} {
@@ -45,6 +47,8 @@ namespace sr {
             m_width = other.m_width;
             m_height = other.m_height;
             m_dt = other.m_dt;
+            m_fps_accum = other.m_fps_accum;
+            m_fps_frames = other.m_fps_frames;
             m_title = std::move(other.m_title);
             m_prev_keys = other.m_prev_keys;
             m_prev_mouse = other.m_prev_mouse;

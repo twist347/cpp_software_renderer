@@ -1,14 +1,3 @@
-## Single clipping layer
+## minifb: set_target_fps broken on high-refresh-rate monitors
 
-Bounds checking happens in two places: FrameBuffer (`set_pixel`/`fill_hor_line`) and partially in raster:: (`blit`, `blit_ex`).
-Redundant checks are nearly free but architecturally messy. Consider a clean single-layer approach without raw `data()` access.
-
-## Migrate from minifb to SDL2/SDL3
-
-SDL provides:
-- Full input support (gamepads, text input, clipboard)
-- Window control (fullscreen, resize, multi-monitor)
-- Audio if needed later
-
-Rasterization stays ours — SDL only presents the pixel buffer
-via `SDL_Texture` + `SDL_UpdateTexture`.
+minifb enables hardware sync (GLX swap interval) when set_target_fps is called, which locks to the monitor refresh rate instead of the requested FPS. On a 180 Hz monitor, set_target_fps(60) results in 180 FPS. Needs an upstream PR or custom software pacing.
