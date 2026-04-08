@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <cstdlib>
+#include <utility>
 #include <expected>
 #include <print>
 
@@ -20,6 +22,9 @@ namespace sr {
     using f32 = float;
     using f64 = double;
 
+    static_assert(sizeof(f32) == 4);
+    static_assert(sizeof(f64) == 8);
+
     using usize = std::size_t;
     using isize = std::ptrdiff_t;
 
@@ -36,7 +41,4 @@ namespace sr {
         }
         return std::move(*res);
     }
-
-    static_assert(sizeof(f32) == 4);
-    static_assert(sizeof(f64) == 8);
 }

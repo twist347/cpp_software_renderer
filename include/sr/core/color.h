@@ -3,6 +3,9 @@
 #include "sr/core/types.h"
 
 namespace sr {
+    // 32-bit pixel: 0xAARRGGBB. Storage type for FrameBuffer and Texture buffers.
+    using Pixel = u32;
+
     struct Color {
         u8 r{};
         u8 g{};

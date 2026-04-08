@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <vector>
 
 #include "sr/core/types.h"
@@ -13,21 +14,42 @@ namespace sr {
         [[nodiscard]] auto width() const noexcept -> i32 { return m_width; }
         [[nodiscard]] auto height() const noexcept -> i32 { return m_height; }
 
-        [[nodiscard]] auto get_pixel(i32 x, i32 y) const noexcept -> Color;
-        [[nodiscard]] auto get_pixel_argb(i32 x, i32 y) const noexcept -> u32;
+        [[nodiscard]] auto get_pixel(i32 x, i32 y) const noexcept -> Color {
+            if (in_bounds(x, y)) {
+                return Color::from_argb(m_buf[static_cast<usize>(y) * m_width + x]);
+            }
+            return {};
+        }
+
+        [[nodiscard]] auto get_pixel_argb(i32 x, i32 y) const noexcept -> Pixel {
+            if (in_bounds(x, y)) {
+                return m_buf[static_cast<usize>(y) * m_width + x];
+            }
+            return 0;
+        }
+
+        [[nodiscard]] auto get_pixel_unchecked(i32 x, i32 y) const noexcept -> Color {
+            assert(in_bounds(x, y));
+            return Color::from_argb(m_buf[static_cast<usize>(y) * m_width + x]);
+        }
+
+        [[nodiscard]] auto get_pixel_argb_unchecked(i32 x, i32 y) const noexcept -> Pixel {
+            assert(in_bounds(x, y));
+            return m_buf[static_cast<usize>(y) * m_width + x];
+        }
 
         [[nodiscard]] auto in_bounds(i32 x, i32 y) const noexcept -> bool {
             return x >= 0 && x < m_width && y >= 0 && y < m_height;
         }
 
-        [[nodiscard]] auto data() const noexcept -> const u32 * { return m_buf.data(); }
+        [[nodiscard]] auto data() const noexcept -> const Pixel * { return m_buf.data(); }
         [[nodiscard]] auto stride() const noexcept -> i32 { return m_width; }
 
     private:
-        Texture(i32 w, i32 h, std::vector<u32> buf) noexcept;
+        Texture(i32 w, i32 h, std::vector<Pixel> buf) noexcept;
 
         i32 m_width;
         i32 m_height;
-        std::vector<u32> m_buf; // ARGB format
+        std::vector<Pixel> m_buf;
     };
 }

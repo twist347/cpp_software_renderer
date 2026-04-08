@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <span>
 #include <vector>
 
@@ -13,22 +14,34 @@ namespace sr {
 
         auto clear(Color c = colors::black) noexcept -> void;
 
-        auto clear(u32 argb) noexcept -> void;
+        auto clear(Pixel argb) noexcept -> void;
 
-        auto set_pixel(i32 x, i32 y, Color c) noexcept -> void;
+        auto set_pixel(i32 x, i32 y, Pixel argb) noexcept -> void {
+            if (in_bounds(x, y)) {
+                m_buf[static_cast<std::size_t>(y) * m_width + x] = argb;
+            }
+        }
 
-        auto set_pixel(i32 x, i32 y, u32 argb) noexcept -> void;
+        auto set_pixel(i32 x, i32 y, Color c) noexcept -> void {
+            set_pixel(x, y, c.to_argb());
+        }
 
-        [[nodiscard]] auto get_pixel(i32 x, i32 y) const noexcept -> Color;
+        [[nodiscard]] auto get_pixel(i32 x, i32 y) const noexcept -> Color {
+            if (in_bounds(x, y)) {
+                return Color::from_argb(m_buf[static_cast<std::size_t>(y) * m_width + x]);
+            }
+            return {};
+        }
 
-        auto fill_hor_line(i32 x0, i32 x1, i32 y, u32 argb) noexcept -> void;
+        auto fill_hor_line(i32 x0, i32 x1, i32 y, Pixel argb) noexcept -> void;
         auto fill_hor_line(i32 x0, i32 x1, i32 y, Color c) noexcept -> void;
 
         // x0 <= x1, all coords in bounds
-        auto fill_hor_line_unchecked(i32 x0, i32 x1, i32 y, u32 argb) noexcept -> void;
+        auto fill_hor_line_unchecked(i32 x0, i32 x1, i32 y, Pixel argb) noexcept -> void;
         auto fill_hor_line_unchecked(i32 x0, i32 x1, i32 y, Color c) noexcept -> void;
 
-        auto set_pixel_unchecked(i32 x, i32 y, u32 argb) noexcept -> void {
+        auto set_pixel_unchecked(i32 x, i32 y, Pixel argb) noexcept -> void {
+            assert(in_bounds(x, y));
             m_buf[static_cast<std::size_t>(y) * m_width + x] = argb;
         }
 
@@ -37,6 +50,7 @@ namespace sr {
         }
 
         [[nodiscard]] auto get_pixel_unchecked(i32 x, i32 y) const noexcept -> Color {
+            assert(in_bounds(x, y));
             return Color::from_argb(m_buf[static_cast<std::size_t>(y) * m_width + x]);
         }
 
@@ -45,7 +59,7 @@ namespace sr {
         }
 
         [[nodiscard]] auto data(this auto &self) noexcept { return self.m_buf.data(); }
-        [[nodiscard]] auto span() const noexcept -> std::span<const u32> { return m_buf; }
+        [[nodiscard]] auto span() const noexcept -> std::span<const Pixel> { return m_buf; }
 
         [[nodiscard]] auto width() const noexcept -> i32 { return m_width; }
         [[nodiscard]] auto height() const noexcept -> i32 { return m_height; }
@@ -54,12 +68,12 @@ namespace sr {
         [[nodiscard]] auto resize(i32 w, i32 h) noexcept -> Status;
 
     private:
-        FrameBuffer(i32 w, i32 h, std::vector<u32> buf) noexcept;
+        FrameBuffer(i32 w, i32 h, std::vector<Pixel> buf) noexcept;
 
-        auto clip_hor_line(i32 &x0, i32 &x1, i32 y) noexcept -> u32 *;
+        auto clip_hor_line(i32 &x0, i32 &x1, i32 y) noexcept -> Pixel *;
 
         i32 m_width;
         i32 m_height;
-        std::vector<u32> m_buf;
+        std::vector<Pixel> m_buf;
     };
 }

@@ -45,6 +45,4 @@ int main() {
 
         win.present(fb);
     }
-
-    return 0;
 }

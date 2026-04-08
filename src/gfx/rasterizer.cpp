@@ -438,13 +438,14 @@ namespace sr::raster {
 
         for (i32 sy = y0; sy < y1; ++sy) {
             for (i32 sx = x0; sx < x1; ++sx) {
-                blend_pixel(fb, px + sx, py + sy, Color::from_argb(tex.get_pixel_argb(sx, sy)));
+                blend_pixel(fb, px + sx, py + sy, Color::from_argb(tex.get_pixel_argb_unchecked(sx, sy)));
             }
         }
     }
 
-    auto blit_ex(FrameBuffer &fb, const Texture &tex, Vec2f pos, Vec2f origin, Vec2f scale,
-                 f32 angle) noexcept -> void {
+    auto blit_ex(
+        FrameBuffer &fb, const Texture &tex, Vec2f pos, Vec2f origin, Vec2f scale, f32 angle
+    ) noexcept -> void {
         const f32 sx = scale.x();
         const f32 sy = scale.y();
         if (sx == 0.f || sy == 0.f) {
@@ -504,7 +505,7 @@ namespace sr::raster {
                 const i32 ity = static_cast<i32>(std::floor(ty));
 
                 if (tex.in_bounds(itx, ity)) {
-                    blend_pixel(fb, dx, dy, Color::from_argb(tex.get_pixel_argb(itx, ity)));
+                    blend_pixel(fb, dx, dy, Color::from_argb(tex.get_pixel_argb_unchecked(itx, ity)));
                 }
 
                 tx += step_tx;
@@ -530,8 +531,16 @@ namespace sr::raster {
 
     static auto cs_outcode(i32 x, i32 y, i32 xmin, i32 ymin, i32 xmax, i32 ymax) noexcept -> i32 {
         i32 code = CS_INSIDE;
-        if (x < xmin) { code |= CS_LEFT; } else if (x > xmax) { code |= CS_RIGHT; }
-        if (y < ymin) { code |= CS_BOTTOM; } else if (y > ymax) { code |= CS_TOP; }
+        if (x < xmin) {
+            code |= CS_LEFT;
+        } else if (x > xmax) {
+            code |= CS_RIGHT;
+        }
+        if (y < ymin) {
+            code |= CS_BOTTOM;
+        } else if (y > ymax) {
+            code |= CS_TOP;
+        }
         return code;
     }
 

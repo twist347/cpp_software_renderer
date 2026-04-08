@@ -1,9 +1,10 @@
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 
 namespace sr {
-    enum class Error {
+    enum class Error : std::uint8_t {
         FileNotFound,
         FileReadFailed,
         InvalidFormat,
