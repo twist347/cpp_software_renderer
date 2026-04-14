@@ -5,7 +5,7 @@ constexpr sr::i32 HEIGHT = 1080;
 constexpr auto WIN_TITLE = "SR Sprites";
 constexpr sr::u32 TARGET_FPS = 60;
 
-constexpr auto TEX_NAME = "img.png";
+constexpr auto TEX_NAME = DEMO_TEX_PATH;
 
 int main() {
     auto win = sr::unwrap(sr::Window::create(WIN_TITLE, WIDTH, HEIGHT));
