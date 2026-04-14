@@ -1,2 +1,4 @@
 add_subdirectory(01_primitives)
 add_subdirectory(02_sprites)
+add_subdirectory(03_benchmark)
+add_subdirectory(04_paint)

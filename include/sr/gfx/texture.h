@@ -9,7 +9,7 @@
 namespace sr {
     class Texture {
     public:
-        static auto load(const char *path) noexcept -> Result<Texture>;
+        [[nodiscard]] static auto load(const char *path) noexcept -> Result<Texture>;
 
         [[nodiscard]] auto width() const noexcept -> i32 { return m_width; }
         [[nodiscard]] auto height() const noexcept -> i32 { return m_height; }

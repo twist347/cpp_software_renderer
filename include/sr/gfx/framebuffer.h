@@ -10,11 +10,23 @@
 namespace sr {
     class FrameBuffer {
     public:
-        static auto create(i32 width, i32 height) noexcept -> Result<FrameBuffer>;
+        [[nodiscard]] static auto create(i32 width, i32 height) noexcept -> Result<FrameBuffer>;
 
         auto clear(Color c = colors::black) noexcept -> void;
 
         auto clear(Pixel p) noexcept -> void;
+
+        [[nodiscard]] auto get_pixel(i32 x, i32 y) const noexcept -> Color {
+            if (in_bounds(x, y)) {
+                return Color::from_argb(m_buf[static_cast<std::size_t>(y) * m_width + x]);
+            }
+            return colors::transparent;
+        }
+
+        [[nodiscard]] auto get_pixel_unchecked(i32 x, i32 y) const noexcept -> Color {
+            assert(in_bounds(x, y));
+            return Color::from_argb(m_buf[static_cast<std::size_t>(y) * m_width + x]);
+        }
 
         auto set_pixel(i32 x, i32 y, Pixel p) noexcept -> void {
             if (in_bounds(x, y)) {
@@ -26,11 +38,13 @@ namespace sr {
             set_pixel(x, y, c.to_argb());
         }
 
-        [[nodiscard]] auto get_pixel(i32 x, i32 y) const noexcept -> Color {
-            if (in_bounds(x, y)) {
-                return Color::from_argb(m_buf[static_cast<std::size_t>(y) * m_width + x]);
-            }
-            return colors::transparent;
+        auto set_pixel_unchecked(i32 x, i32 y, Pixel p) noexcept -> void {
+            assert(in_bounds(x, y));
+            m_buf[static_cast<std::size_t>(y) * m_width + x] = p;
+        }
+
+        auto set_pixel_unchecked(i32 x, i32 y, Color c) noexcept -> void {
+            set_pixel_unchecked(x, y, c.to_argb());
         }
 
         auto fill_hor_line(i32 x0, i32 x1, i32 y, Pixel p) noexcept -> void;
@@ -41,20 +55,6 @@ namespace sr {
         auto fill_hor_line_unchecked(i32 x0, i32 x1, i32 y, Pixel p) noexcept -> void;
 
         auto fill_hor_line_unchecked(i32 x0, i32 x1, i32 y, Color c) noexcept -> void;
-
-        auto set_pixel_unchecked(i32 x, i32 y, Pixel p) noexcept -> void {
-            assert(in_bounds(x, y));
-            m_buf[static_cast<std::size_t>(y) * m_width + x] = p;
-        }
-
-        auto set_pixel_unchecked(i32 x, i32 y, Color c) noexcept -> void {
-            set_pixel_unchecked(x, y, c.to_argb());
-        }
-
-        [[nodiscard]] auto get_pixel_unchecked(i32 x, i32 y) const noexcept -> Color {
-            assert(in_bounds(x, y));
-            return Color::from_argb(m_buf[static_cast<std::size_t>(y) * m_width + x]);
-        }
 
         [[nodiscard]] auto in_bounds(i32 x, i32 y) const noexcept -> bool {
             return x >= 0 && x < m_width && y >= 0 && y < m_height;

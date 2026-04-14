@@ -1,6 +1,7 @@
 #pragma once
 
 // core
+#include "sr/core/macros.h"
 #include "sr/core/types.h"
 #include "sr/core/error.h"
 #include "sr/core/color.h"
@@ -8,6 +9,7 @@
 #include "sr/core/aabb.h"
 
 // gfx
+#include "sr/gfx/render_state.h"
 #include "sr/gfx/framebuffer.h"
 #include "sr/gfx/texture.h"
 #include "sr/gfx/rasterizer.h"

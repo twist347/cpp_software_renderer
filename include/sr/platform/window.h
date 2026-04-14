@@ -14,7 +14,7 @@ struct mfb_timer;
 namespace sr {
     class Window {
     public:
-        static auto create(const char *title, i32 width, i32 height) noexcept -> Result<Window>;
+        [[nodiscard]] static auto create(const char *title, i32 width, i32 height) noexcept -> Result<Window>;
 
         ~Window() noexcept;
 

@@ -7,6 +7,7 @@
 #include "sr/core/vec.h"
 #include "sr/gfx/framebuffer.h"
 #include "sr/gfx/texture.h"
+#include "sr/gfx/render_state.h"
 
 namespace sr {
     class Renderer2D {
@@ -42,10 +43,22 @@ namespace sr {
         auto draw_sprite(const Texture &tex, Vec2i pos) noexcept -> void;
         auto draw_sprite_ex(const Texture &tex, Vec2f pos, Vec2f origin, Vec2f scale, f32 angle) noexcept -> void;
 
+        // state
+        auto set_blend_mode(BlendMode m) noexcept -> void { m_blend = m; }
+        auto set_sampler_filter(SamplerFilter f) noexcept -> void { m_filter = f; }
+        auto set_wrap_mode(WrapMode w) noexcept -> void { m_wrap = w; }
+
+        [[nodiscard]] auto blend_mode() const noexcept -> BlendMode { return m_blend; }
+        [[nodiscard]] auto sampler_filter() const noexcept -> SamplerFilter { return m_filter; }
+        [[nodiscard]] auto wrap_mode() const noexcept -> WrapMode { return m_wrap; }
+
         [[nodiscard]] auto framebuffer() noexcept -> FrameBuffer & { return m_fb; }
         [[nodiscard]] auto framebuffer() const noexcept -> const FrameBuffer & { return m_fb; }
 
     private:
         FrameBuffer &m_fb;
+        BlendMode m_blend{BlendMode::Alpha};
+        SamplerFilter m_filter{SamplerFilter::Nearest};
+        WrapMode m_wrap{WrapMode::Clamp};
     };
 }
