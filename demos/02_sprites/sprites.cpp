@@ -37,8 +37,9 @@ int main() {
         // scaled + rotated
         ren.draw_sprite_ex(tex, {1600, 300}, {cx, cy}, {1.5f, 1.5f}, -angle * 0.5f);
 
-        // mirrored horizontally
-        ren.draw_sprite_ex(tex, {100, 600}, {0, 0}, {-1.f, 1.f}, 0.f);
+        // mirrored horizontally in place: origin at top-right so pos is the visible left edge
+        const auto tex_w = static_cast<sr::f32>(tex.width());
+        ren.draw_sprite_ex(tex, {100, 600}, {tex_w, 0}, {-1.f, 1.f}, 0.f);
 
         // small
         ren.draw_sprite_ex(tex, {500, 600}, {0, 0}, {0.5f, 0.5f}, 0.f);

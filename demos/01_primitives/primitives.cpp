@@ -43,9 +43,9 @@ int main() {
         ren.fill_polygon(hexagon, sr::Color{100, 50, 200});
         ren.draw_polygon(hexagon, sr::colors::white);
 
-        // Rotated rect
-        ren.fill_rect_ex({1550, 650}, {350, 180}, {175, 90}, 0.5f, sr::Color{0, 200, 100});
-        ren.draw_rect_ex({1550, 650}, {350, 180}, {175, 90}, 0.5f, sr::colors::white);
+        // Rotated rect (origin at center → pos = visual center)
+        ren.fill_rect_ex({1700, 740}, {350, 180}, {175, 90}, 0.5f, sr::Color{0, 200, 100});
+        ren.draw_rect_ex({1700, 740}, {350, 180}, {175, 90}, 0.5f, sr::colors::white);
 
         win.present(fb);
     }

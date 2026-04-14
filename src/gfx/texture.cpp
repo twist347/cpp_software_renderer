@@ -24,6 +24,10 @@ namespace sr {
         if (!data) {
             return std::unexpected{Error::InvalidFormat};
         }
+        if (w <= 0 || h <= 0) {
+            stbi_image_free(data);
+            return std::unexpected{Error::InvalidDimensions};
+        }
 
         auto buf = rgba_to_argb(data, static_cast<usize>(w) * h);
         stbi_image_free(data);

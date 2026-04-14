@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 
 #include "sr/core/vec.h"
 
@@ -15,6 +16,7 @@ namespace sr {
         }
 
         static constexpr auto from_pos_size(Vec2f pos, Vec2f size) noexcept -> AABB2D {
+            assert(size.x() >= 0.f && size.y() >= 0.f);
             return {pos, pos + size};
         }
 

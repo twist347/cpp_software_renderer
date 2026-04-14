@@ -18,7 +18,7 @@ namespace sr {
             if (in_bounds(x, y)) {
                 return Color::from_argb(m_buf[static_cast<usize>(y) * m_width + x]);
             }
-            return {};
+            return colors::transparent;
         }
 
         [[nodiscard]] auto get_pixel_argb(i32 x, i32 y) const noexcept -> Pixel {

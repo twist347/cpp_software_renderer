@@ -14,11 +14,11 @@ namespace sr {
 
         auto clear(Color c = colors::black) noexcept -> void;
 
-        auto clear(Pixel argb) noexcept -> void;
+        auto clear(Pixel p) noexcept -> void;
 
-        auto set_pixel(i32 x, i32 y, Pixel argb) noexcept -> void {
+        auto set_pixel(i32 x, i32 y, Pixel p) noexcept -> void {
             if (in_bounds(x, y)) {
-                m_buf[static_cast<std::size_t>(y) * m_width + x] = argb;
+                m_buf[static_cast<std::size_t>(y) * m_width + x] = p;
             }
         }
 
@@ -30,19 +30,21 @@ namespace sr {
             if (in_bounds(x, y)) {
                 return Color::from_argb(m_buf[static_cast<std::size_t>(y) * m_width + x]);
             }
-            return {};
+            return colors::transparent;
         }
 
-        auto fill_hor_line(i32 x0, i32 x1, i32 y, Pixel argb) noexcept -> void;
+        auto fill_hor_line(i32 x0, i32 x1, i32 y, Pixel p) noexcept -> void;
+
         auto fill_hor_line(i32 x0, i32 x1, i32 y, Color c) noexcept -> void;
 
         // x0 <= x1, all coords in bounds
-        auto fill_hor_line_unchecked(i32 x0, i32 x1, i32 y, Pixel argb) noexcept -> void;
+        auto fill_hor_line_unchecked(i32 x0, i32 x1, i32 y, Pixel p) noexcept -> void;
+
         auto fill_hor_line_unchecked(i32 x0, i32 x1, i32 y, Color c) noexcept -> void;
 
-        auto set_pixel_unchecked(i32 x, i32 y, Pixel argb) noexcept -> void {
+        auto set_pixel_unchecked(i32 x, i32 y, Pixel p) noexcept -> void {
             assert(in_bounds(x, y));
-            m_buf[static_cast<std::size_t>(y) * m_width + x] = argb;
+            m_buf[static_cast<std::size_t>(y) * m_width + x] = p;
         }
 
         auto set_pixel_unchecked(i32 x, i32 y, Color c) noexcept -> void {

@@ -30,6 +30,11 @@ namespace sr {
         constexpr Vec(Args... args) noexcept : m_data{static_cast<T>(args)...} {
         }
 
+        // broadcast: Vec2f{3.f} → {3.f, 3.f}. disabled for N == 1 to avoid overlap with variadic.
+        explicit constexpr Vec(T v) noexcept requires (N > 1) {
+            m_data.fill(v);
+        }
+
         constexpr auto x(this auto &&self) noexcept -> auto & requires(N > 0) {
             return self.m_data[0];
         }

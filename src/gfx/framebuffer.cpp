@@ -19,8 +19,8 @@ namespace sr {
         clear(c.to_argb());
     }
 
-    auto FrameBuffer::clear(Pixel argb) noexcept -> void {
-        std::fill(m_buf.begin(), m_buf.end(), argb);
+    auto FrameBuffer::clear(Pixel p) noexcept -> void {
+        std::fill(m_buf.begin(), m_buf.end(), p);
     }
 
     auto FrameBuffer::clip_hor_line(i32 &x0, i32 &x1, i32 y) noexcept -> Pixel * {
@@ -38,9 +38,9 @@ namespace sr {
         return m_buf.data() + static_cast<std::size_t>(y) * m_width;
     }
 
-    auto FrameBuffer::fill_hor_line(i32 x0, i32 x1, i32 y, Pixel argb) noexcept -> void {
+    auto FrameBuffer::fill_hor_line(i32 x0, i32 x1, i32 y, Pixel p) noexcept -> void {
         if (auto *row = clip_hor_line(x0, x1, y)) {
-            std::fill(row + x0, row + x1 + 1, argb);
+            std::fill(row + x0, row + x1 + 1, p);
         }
     }
 
@@ -59,12 +59,14 @@ namespace sr {
         }
     }
 
-    auto FrameBuffer::fill_hor_line_unchecked(i32 x0, i32 x1, i32 y, Pixel argb) noexcept -> void {
+    auto FrameBuffer::fill_hor_line_unchecked(i32 x0, i32 x1, i32 y, Pixel p) noexcept -> void {
+        assert(x0 <= x1 && in_bounds(x0, y) && in_bounds(x1, y));
         auto *row = m_buf.data() + static_cast<std::size_t>(y) * m_width;
-        std::fill(row + x0, row + x1 + 1, argb);
+        std::fill(row + x0, row + x1 + 1, p);
     }
 
     auto FrameBuffer::fill_hor_line_unchecked(i32 x0, i32 x1, i32 y, Color c) noexcept -> void {
+        assert(x0 <= x1 && in_bounds(x0, y) && in_bounds(x1, y));
         if (c.a == 0) {
             return;
         }

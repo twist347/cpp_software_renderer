@@ -38,10 +38,10 @@ namespace sr::raster {
         const i32 sy = y0 < y1 ? 1 : -1;
         i32 err = dx + dy;
 
-        const u32 argb = c.to_argb();
+        const Pixel p = c.to_argb();
 
         while (true) {
-            fb.set_pixel_unchecked(x0, y0, argb);
+            fb.set_pixel_unchecked(x0, y0, p);
             if (x0 == x1 && y0 == y1) {
                 break;
             }
@@ -76,20 +76,20 @@ namespace sr::raster {
 
         const std::array<Vec2i, 4> vertices = {
             Vec2i{
-                static_cast<i32>(static_cast<f32>(a.x()) + nx),
-                static_cast<i32>(static_cast<f32>(a.y()) + ny)
+                static_cast<i32>(std::lround(static_cast<f32>(a.x()) + nx)),
+                static_cast<i32>(std::lround(static_cast<f32>(a.y()) + ny))
             },
             Vec2i{
-                static_cast<i32>(static_cast<f32>(b.x()) + nx),
-                static_cast<i32>(static_cast<f32>(b.y()) + ny)
+                static_cast<i32>(std::lround(static_cast<f32>(b.x()) + nx)),
+                static_cast<i32>(std::lround(static_cast<f32>(b.y()) + ny))
             },
             Vec2i{
-                static_cast<i32>(static_cast<f32>(b.x()) - nx),
-                static_cast<i32>(static_cast<f32>(b.y()) - ny)
+                static_cast<i32>(std::lround(static_cast<f32>(b.x()) - nx)),
+                static_cast<i32>(std::lround(static_cast<f32>(b.y()) - ny))
             },
             Vec2i{
-                static_cast<i32>(static_cast<f32>(a.x()) - nx),
-                static_cast<i32>(static_cast<f32>(a.y()) - ny)
+                static_cast<i32>(std::lround(static_cast<f32>(a.x()) - nx)),
+                static_cast<i32>(std::lround(static_cast<f32>(a.y()) - ny))
             },
         };
 
@@ -113,32 +113,38 @@ namespace sr::raster {
         // clip horizontal edges x-range once
         const i32 cx0 = std::max(x0, 0);
         const i32 cx1 = std::min(x1, fw - 1);
-        const u32 argb = c.to_argb();
+        const Pixel p = c.to_argb();
 
         if (cx0 <= cx1) {
             if (y0 >= 0 && y0 < fh) {
-                fb.fill_hor_line_unchecked(cx0, cx1, y0, argb);
+                fb.fill_hor_line_unchecked(cx0, cx1, y0, p);
             }
             if (y1 != y0 && y1 >= 0 && y1 < fh) {
-                fb.fill_hor_line_unchecked(cx0, cx1, y1, argb);
+                fb.fill_hor_line_unchecked(cx0, cx1, y1, p);
             }
         }
 
-        // clip vertical edges y-range once
+        // clip vertical edges y-range once; x-visibility is loop-invariant
         const i32 vy0 = std::max(y0 + 1, 0);
         const i32 vy1 = std::min(y1 - 1, fh - 1);
+        const bool x0_in = x0 >= 0 && x0 < fw;
+        const bool x1_in = x1 >= 0 && x1 < fw && x1 != x0;
         for (i32 y = vy0; y <= vy1; ++y) {
-            if (x0 >= 0 && x0 < fw) {
-                fb.set_pixel_unchecked(x0, y, argb);
+            if (x0_in) {
+                fb.set_pixel_unchecked(x0, y, p);
             }
-            if (x1 >= 0 && x1 < fw && x1 != x0) {
-                fb.set_pixel_unchecked(x1, y, argb);
+            if (x1_in) {
+                fb.set_pixel_unchecked(x1, y, p);
             }
         }
     }
 
     // rect clipped once; x-range constant across all scanlines → unchecked fill
     auto fill_rect(FrameBuffer &fb, Vec2i a, Vec2i b, Color c) noexcept -> void {
+        if (c.a == 0) {
+            return;
+        }
+
         auto [x0, y0] = a;
         auto [x1, y1] = b;
         if (x0 > x1) {
@@ -156,8 +162,16 @@ namespace sr::raster {
             return;
         }
 
-        for (i32 y = y0; y <= y1; ++y) {
-            fb.fill_hor_line_unchecked(x0, x1, y, c);
+        // hoist alpha branch + to_argb out of per-row loop
+        if (c.a == 255) {
+            const Pixel p = c.to_argb();
+            for (i32 y = y0; y <= y1; ++y) {
+                fb.fill_hor_line_unchecked(x0, x1, y, p);
+            }
+        } else {
+            for (i32 y = y0; y <= y1; ++y) {
+                fb.fill_hor_line_unchecked(x0, x1, y, c);
+            }
         }
     }
 
@@ -171,14 +185,21 @@ namespace sr::raster {
         i32 err = 1 - x;
 
         while (x >= y) {
+            // 8-way symmetry with dedup at y=0 and x=y (octant boundaries)
             fb.set_pixel(cx + x, cy + y, c);
             fb.set_pixel(cx - x, cy + y, c);
-            fb.set_pixel(cx + x, cy - y, c);
-            fb.set_pixel(cx - x, cy - y, c);
-            fb.set_pixel(cx + y, cy + x, c);
-            fb.set_pixel(cx - y, cy + x, c);
-            fb.set_pixel(cx + y, cy - x, c);
-            fb.set_pixel(cx - y, cy - x, c);
+            if (y != 0) {
+                fb.set_pixel(cx + x, cy - y, c);
+                fb.set_pixel(cx - x, cy - y, c);
+            }
+            if (x != y) {
+                fb.set_pixel(cx + y, cy + x, c);
+                fb.set_pixel(cx + y, cy - x, c);
+                if (y != 0) {
+                    fb.set_pixel(cx - y, cy + x, c);
+                    fb.set_pixel(cx - y, cy - x, c);
+                }
+            }
 
             ++y;
             if (err < 0) {
@@ -231,13 +252,24 @@ namespace sr::raster {
         i64 px = 0;
         i64 py = 2 * rx2 * y;
 
+        // 4-way symmetry with dedup at x=0 and y=0
+        const auto plot = [&](i32 xi, i32 yi) noexcept {
+            fb.set_pixel(cx + xi, cy + yi, c);
+            if (xi != 0) {
+                fb.set_pixel(cx - xi, cy + yi, c);
+            }
+            if (yi != 0) {
+                fb.set_pixel(cx + xi, cy - yi, c);
+                if (xi != 0) {
+                    fb.set_pixel(cx - xi, cy - yi, c);
+                }
+            }
+        };
+
         // Region 1: dy/dx > -1
         i64 d1 = ry2 - rx2 * ry + rx2 / 4;
         while (px < py) {
-            fb.set_pixel(cx + x, cy + y, c);
-            fb.set_pixel(cx - x, cy + y, c);
-            fb.set_pixel(cx + x, cy - y, c);
-            fb.set_pixel(cx - x, cy - y, c);
+            plot(x, y);
             ++x;
             px += 2 * ry2;
             if (d1 < 0) {
@@ -252,10 +284,7 @@ namespace sr::raster {
         // Region 2: dy/dx <= -1
         i64 d2 = ry2 * (2 * x + 1) * (2 * x + 1) / 4 + rx2 * (y - 1) * (y - 1) - rx2 * ry2;
         while (y >= 0) {
-            fb.set_pixel(cx + x, cy + y, c);
-            fb.set_pixel(cx - x, cy + y, c);
-            fb.set_pixel(cx + x, cy - y, c);
-            fb.set_pixel(cx - x, cy - y, c);
+            plot(x, y);
             --y;
             py -= 2 * rx2;
             if (d2 > 0) {
@@ -330,6 +359,10 @@ namespace sr::raster {
     }
 
     auto fill_triangle(FrameBuffer &fb, Vec2i a, Vec2i b, Vec2i c, Color col) noexcept -> void {
+        if (col.a == 0) {
+            return;
+        }
+
         if (a.y() > b.y()) {
             std::swap(a, b);
         }
@@ -344,7 +377,7 @@ namespace sr::raster {
             return; // degenerate
         }
 
-        auto edge_x = [](Vec2i from, Vec2i to, i32 y) -> i32 {
+        const auto edge_x = [](Vec2i from, Vec2i to, i32 y) -> i32 {
             const i32 dy = to.y() - from.y();
             if (dy == 0) {
                 return from.x();
@@ -352,17 +385,40 @@ namespace sr::raster {
             return from.x() + floor_div((y - from.y()) * (to.x() - from.x()), dy);
         };
 
-        const i32 ylo = std::max(a.y(), 0);
-        const i32 yhi = std::min(c.y(), fb.height() - 1);
+        const i32 fw = fb.width();
+        const i32 fh = fb.height();
 
-        // Upper half (a -> b, a -> c)
-        for (i32 y = std::max(ylo, a.y()); y < std::min(b.y(), yhi + 1); ++y) {
-            fb.fill_hor_line(edge_x(a, b, y), edge_x(a, c, y), y, col);
-        }
+        // hoist alpha+to_argb out of per-scanline loop via generic lambda;
+        // 'fill' is either Pixel (opaque path) or Color (blend path)
+        const auto run = [&](auto fill) {
+            const auto emit = [&](i32 x0, i32 x1, i32 y) {
+                if (x0 > x1) {
+                    std::swap(x0, x1);
+                }
+                x0 = std::max(x0, 0);
+                x1 = std::min(x1, fw - 1);
+                if (x0 <= x1) {
+                    fb.fill_hor_line_unchecked(x0, x1, y, fill);
+                }
+            };
 
-        // Lower half (b -> c, a -> c)
-        for (i32 y = std::max(ylo, b.y()); y <= std::min(c.y(), yhi); ++y) {
-            fb.fill_hor_line(edge_x(b, c, y), edge_x(a, c, y), y, col);
+            const i32 u_lo = std::max(a.y(), 0);
+            const i32 u_hi = std::min(b.y(), fh);
+            for (i32 y = u_lo; y < u_hi; ++y) {
+                emit(edge_x(a, b, y), edge_x(a, c, y), y);
+            }
+
+            const i32 l_lo = std::max(b.y(), 0);
+            const i32 l_hi = std::min(c.y(), fh - 1);
+            for (i32 y = l_lo; y <= l_hi; ++y) {
+                emit(edge_x(b, c, y), edge_x(a, c, y), y);
+            }
+        };
+
+        if (col.a == 255) {
+            run(col.to_argb());
+        } else {
+            run(col);
         }
     }
 
@@ -377,6 +433,10 @@ namespace sr::raster {
     }
 
     auto fill_polygon(FrameBuffer &fb, std::span<const Vec2i> points, Color c) noexcept -> void {
+        if (c.a == 0) {
+            return;
+        }
+
         const auto n = points.size();
         if (n < 3) {
             return;
@@ -392,34 +452,48 @@ namespace sr::raster {
         y_min = std::max(y_min, 0);
         y_max = std::min(y_max, fb.height() - 1);
 
+        const i32 fw = fb.width();
         thread_local std::vector<i32> intersections;
 
-        for (i32 y = y_min; y <= y_max; ++y) {
-            intersections.clear();
+        // hoist alpha+to_argb out of scanline loop; 'fill' is Pixel or Color
+        const auto run = [&](auto fill) {
+            for (i32 y = y_min; y <= y_max; ++y) {
+                intersections.clear();
 
-            for (usize i = 0; i < n; ++i) {
-                const auto &[ax, ay] = points[i];
-                const auto &[bx, by] = points[(i + 1) % n];
+                for (usize i = 0; i < n; ++i) {
+                    const auto &[ax, ay] = points[i];
+                    const auto &[bx, by] = points[(i + 1) % n];
 
-                if (ay == by) {
-                    continue;
+                    if (ay == by) {
+                        continue;
+                    }
+
+                    // Edge crosses scanline if y is in [min_y, max_y) — exclude top endpoint to avoid double-counting at vertices
+                    const i32 lo = std::min(ay, by);
+                    if (const i32 hi = std::max(ay, by); y < lo || y >= hi) {
+                        continue;
+                    }
+
+                    const i32 ix = ax + floor_div((y - ay) * (bx - ax), by - ay);
+                    intersections.push_back(ix);
                 }
 
-                // Edge crosses scanline if y is in [min_y, max_y) — exclude top endpoint to avoid double-counting at vertices
-                const i32 lo = std::min(ay, by);
-                if (const i32 hi = std::max(ay, by); y < lo || y >= hi) {
-                    continue;
+                std::sort(intersections.begin(), intersections.end());
+
+                for (usize i = 0; i + 1 < intersections.size(); i += 2) {
+                    const i32 x0 = std::max(intersections[i], 0);
+                    const i32 x1 = std::min(intersections[i + 1], fw - 1);
+                    if (x0 <= x1) {
+                        fb.fill_hor_line_unchecked(x0, x1, y, fill);
+                    }
                 }
-
-                i32 ix = ax + floor_div((y - ay) * (bx - ax), by - ay);
-                intersections.push_back(ix);
             }
+        };
 
-            std::sort(intersections.begin(), intersections.end());
-
-            for (usize i = 0; i + 1 < intersections.size(); i += 2) {
-                fb.fill_hor_line(intersections[i], intersections[i + 1], y, c);
-            }
+        if (c.a == 255) {
+            run(c.to_argb());
+        } else {
+            run(c);
         }
     }
 
@@ -457,20 +531,18 @@ namespace sr::raster {
         const f32 tw = static_cast<f32>(tex.width());
         const f32 th = static_cast<f32>(tex.height());
 
-        // compute AABB of the transformed sprite to iterate only relevant pixels
-        const f32 hw = tw * std::abs(sx);
-        const f32 hh = th * std::abs(sy);
-        const std::array<Vec2f, 4> corners = {
-            Vec2f{0.f, 0.f}, Vec2f{hw, 0.f}, Vec2f{hw, hh}, Vec2f{0.f, hh}
+        // AABB via forward transform of texture-space corners; signed scale handled correctly
+        const std::array<Vec2f, 4> tex_corners = {
+            Vec2f{0.f, 0.f}, Vec2f{tw, 0.f}, Vec2f{tw, th}, Vec2f{0.f, th}
         };
 
         f32 min_x = std::numeric_limits<f32>::max();
         f32 min_y = std::numeric_limits<f32>::max();
         f32 max_x = std::numeric_limits<f32>::lowest();
         f32 max_y = std::numeric_limits<f32>::lowest();
-        for (const auto &corner: corners) {
-            const f32 dx = corner.x() - origin.x() * std::abs(sx);
-            const f32 dy = corner.y() - origin.y() * std::abs(sy);
+        for (const auto &uv: tex_corners) {
+            const f32 dx = (uv.x() - origin.x()) * sx;
+            const f32 dy = (uv.y() - origin.y()) * sy;
             const f32 rx = pos.x() + dx * cos_a - dy * sin_a;
             const f32 ry = pos.y() + dx * sin_a + dy * cos_a;
             min_x = std::min(min_x, rx);
@@ -493,17 +565,46 @@ namespace sr::raster {
         const f32 step_tx = cos_a * inv_sx;
         const f32 step_ty = -sin_a * inv_sy;
 
-        for (i32 dy = dst_y0; dy <= dst_y1; ++dy) {
-            // full transform once per row
-            const f32 rx0 = static_cast<f32>(dst_x0) - pos.x();
-            const f32 ry = static_cast<f32>(dy) - pos.y();
-            f32 tx = (rx0 * cos_a + ry * sin_a) * inv_sx + origin.x();
-            f32 ty = (-rx0 * sin_a + ry * cos_a) * inv_sy + origin.y();
+        const f32 base_x = static_cast<f32>(dst_x0);
+        const f32 ftw = static_cast<f32>(tex.width());
+        const f32 fth = static_cast<f32>(tex.height());
 
-            for (i32 dx = dst_x0; dx <= dst_x1; ++dx) {
+        // Narrow [lo, hi] (inclusive integer dx) so that 0 <= val0 + (dx - dst_x0)*step < dim
+        const auto narrow = [&](f32 val0, f32 step, f32 dim, i32 &lo, i32 &hi) noexcept {
+            if (step > 0.f) {
+                lo = std::max(lo, static_cast<i32>(std::ceil(base_x + (0.f - val0) / step)));
+                hi = std::min(hi, static_cast<i32>(std::ceil(base_x + (dim - val0) / step)) - 1);
+            } else if (step < 0.f) {
+                lo = std::max(lo, static_cast<i32>(std::floor(base_x + (dim - val0) / step)) + 1);
+                hi = std::min(hi, static_cast<i32>(std::floor(base_x + (0.f - val0) / step)));
+            } else if (val0 < 0.f || val0 >= dim) {
+                hi = lo - 1;
+            }
+        };
+
+        for (i32 dy = dst_y0; dy <= dst_y1; ++dy) {
+            const f32 rx0 = base_x - pos.x();
+            const f32 ry = static_cast<f32>(dy) - pos.y();
+            const f32 tx0 = (rx0 * cos_a + ry * sin_a) * inv_sx + origin.x();
+            const f32 ty0 = (-rx0 * sin_a + ry * cos_a) * inv_sy + origin.y();
+
+            i32 dx_lo = dst_x0;
+            i32 dx_hi = dst_x1;
+            narrow(tx0, step_tx, ftw, dx_lo, dx_hi);
+            narrow(ty0, step_ty, fth, dx_lo, dx_hi);
+            if (dx_lo > dx_hi) {
+                continue;
+            }
+
+            const f32 k = static_cast<f32>(dx_lo - dst_x0);
+            f32 tx = tx0 + k * step_tx;
+            f32 ty = ty0 + k * step_ty;
+
+            for (i32 dx = dx_lo; dx <= dx_hi; ++dx) {
                 const i32 itx = static_cast<i32>(std::floor(tx));
                 const i32 ity = static_cast<i32>(std::floor(ty));
 
+                // safety net for FP rounding at narrowed boundaries
                 if (tex.in_bounds(itx, ity)) {
                     blend_pixel(fb, dx, dy, Color::from_argb(tex.get_pixel_argb_unchecked(itx, ity)));
                 }
