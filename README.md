@@ -17,7 +17,7 @@ A from-scratch 2D software renderer. No GPU, no OpenGL — just pixels on a CPU-
 - State lives on `Renderer2D`; all dispatch is compile-time via templated internals
 
 ### Textures
-- Load PNG/JPG via stb_image (RGBA → ARGB conversion at load time)
+- Load PNG/JPG via stb_image (RGBA → ARGB conversion at load time) or build procedurally from a pixel buffer via `Texture::from_pixels`
 - `blit` (axis-aligned, pixel-exact) and `blit_ex` (scale + rotate + sampler)
 - Texture-space origin convention (pivot lands on `pos`), consistent with raylib/SFML
 
@@ -40,13 +40,15 @@ sr::gfx
     raster::   — free functions, low-level primitives taking FrameBuffer&
     Renderer2D — stateful API over raster:: (holds blend/sampler state)
     FrameBuffer — owning pixel buffer (Pixel = u32 ARGB)
-    Texture    — immutable image, loaded from file
+    Texture    — immutable image, loaded from file or built from pixel buffer
 sr::platform   — Window, Input
 ```
 
 `raster::` is stateless; `Renderer2D` wraps it with render state. Public functions take runtime enum parameters; internally they dispatch to templated implementations (`write_pixel<M>`, `sample<F, W>`, `blit_ex_impl<M, F, W>`) so hot loops contain zero enum-checks.
 
 FrameBuffer distinguishes checked public API from `*_unchecked` internals used after clipping; every `_unchecked` method asserts its precondition in debug.
+
+`SR_INLINE` / `SR_NOINLINE` macros (in `sr/core/macros.h`) wrap compiler-specific `always_inline` / `noinline` attributes; used on hot-path template helpers in the rasterizer where GCC's inliner heuristic is too conservative.
 
 ## Build
 
@@ -56,6 +58,8 @@ cmake --build build
 
 ./build/demos/01_primitives/demo_01_primitives
 ./build/demos/02_sprites/demo_02_sprites
+./build/demos/03_benchmark/demo_03_benchmark
+./build/demos/04_paint/demo_04_paint
 ```
 
 Requires C++23 (GCC 14+ or Clang 18+). minifb is bundled under `thirdparty/`.
@@ -64,6 +68,8 @@ Requires C++23 (GCC 14+ or Clang 18+). minifb is bundled under `thirdparty/`.
 
 - **`01_primitives`** — grid of all primitive types (filled/outlined, rotated).
 - **`02_sprites`** — `blit` + `blit_ex` variants: scaled, rotated, scaled+rotated, mirrored, half-size.
+- **`03_benchmark`** — heavy deterministic scene (~5600 moving primitives + 100 textured sprites over 4 procedural textures). Fixed xorshift32 seed for reproducibility; intended as a baseline for the Rust port.
+- **`04_paint`** — interactive paint demo: LMB paints with a stamped-circle brush, RMB erases, 1-6 picks color, `[` / `]` adjusts thickness, `C` clears.
 
 ## Status
 
