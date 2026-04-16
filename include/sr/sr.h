@@ -7,6 +7,7 @@
 #include "sr/core/color.h"
 #include "sr/core/vec.h"
 #include "sr/core/aabb.h"
+#include "sr/core/rect.h"
 
 // gfx
 #include "sr/gfx/render_state.h"
