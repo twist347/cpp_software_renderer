@@ -1,3 +1,9 @@
+function(sr_add_demo SOURCE_NAME TARGET_NAME)
+    add_executable(${SOURCE_NAME} ${TARGET_NAME})
+    target_link_libraries(${SOURCE_NAME} PRIVATE sr)
+    target_compile_options(${SOURCE_NAME} PRIVATE -Wall -Wextra -pedantic)
+endfunction()
+
 add_subdirectory(01_primitives)
 add_subdirectory(02_sprites)
 add_subdirectory(03_benchmark)
