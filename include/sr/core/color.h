@@ -45,13 +45,14 @@ namespace sr {
             };
         }
 
-        [[nodiscard]] static constexpr auto lerp(Color a, Color b, f32 t) noexcept -> Color {
-            const f32 inv = 1.f - t;
+        // Q0.8 fixed-point lerp; `t_q8` in [0, 256]. Bit-exact for the bilinear sampler hot path.
+        [[nodiscard]] static constexpr auto lerp(Color a, Color b, u32 t_q8) noexcept -> Color {
+            const u32 inv = 256 - t_q8;
             return {
-                static_cast<u8>(static_cast<f32>(a.r) * inv + static_cast<f32>(b.r) * t + 0.5f),
-                static_cast<u8>(static_cast<f32>(a.g) * inv + static_cast<f32>(b.g) * t + 0.5f),
-                static_cast<u8>(static_cast<f32>(a.b) * inv + static_cast<f32>(b.b) * t + 0.5f),
-                static_cast<u8>(static_cast<f32>(a.a) * inv + static_cast<f32>(b.a) * t + 0.5f)
+                static_cast<u8>((a.r * inv + b.r * t_q8 + 128) >> 8),
+                static_cast<u8>((a.g * inv + b.g * t_q8 + 128) >> 8),
+                static_cast<u8>((a.b * inv + b.b * t_q8 + 128) >> 8),
+                static_cast<u8>((a.a * inv + b.a * t_q8 + 128) >> 8),
             };
         }
 

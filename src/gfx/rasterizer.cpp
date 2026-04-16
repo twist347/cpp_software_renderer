@@ -164,13 +164,13 @@ namespace sr::raster {
                 const f32 fy = ty - 0.5f;
                 const i32 x0 = static_cast<i32>(std::floor(fx));
                 const i32 y0 = static_cast<i32>(std::floor(fy));
-                const f32 rx = fx - static_cast<f32>(x0);
-                const f32 ry = fy - static_cast<f32>(y0);
+                const u32 trx = static_cast<u32>((fx - static_cast<f32>(x0)) * 256.f);
+                const u32 try_q = static_cast<u32>((fy - static_cast<f32>(y0)) * 256.f);
                 const Color c00 = fetch(x0, y0);
                 const Color c10 = fetch(x0 + 1, y0);
                 const Color c01 = fetch(x0, y0 + 1);
                 const Color c11 = fetch(x0 + 1, y0 + 1);
-                return Color::lerp(Color::lerp(c00, c10, rx), Color::lerp(c01, c11, rx), ry);
+                return Color::lerp(Color::lerp(c00, c10, trx), Color::lerp(c01, c11, trx), try_q);
             }
         }
 
@@ -203,8 +203,9 @@ namespace sr::raster {
             return code;
         }
 
-        auto clip_line(i32 &x0, i32 &y0, i32 &x1, i32 &y1, i32 w, i32 h) noexcept -> bool {
-            const i32 xmin = 0, ymin = 0, xmax = w - 1, ymax = h - 1;
+        auto clip_line(i32 &x0, i32 &y0, i32 &x1, i32 &y1, Recti clip) noexcept -> bool {
+            const i32 xmin = clip.min.x(), ymin = clip.min.y();
+            const i32 xmax = clip.max.x() - 1, ymax = clip.max.y() - 1;
             auto c0 = cs_outcode(x0, y0, xmin, ymin, xmax, ymax);
             auto c1 = cs_outcode(x1, y1, xmin, ymin, xmax, ymax);
 
@@ -308,14 +309,16 @@ namespace sr::raster {
             }
         }
 
-        // Clip x-range to framebuffer and emit a scanline (y assumed in-bounds).
+        // Clip x-range to the clip rect and emit a scanline. Caller must ensure y is inside the clip.
         template<BlendMode M>
-        SR_INLINE auto emit_clipped_scanline(FrameBuffer &fb, i32 x0, i32 x1, i32 y, Color c) noexcept -> void {
+        SR_INLINE auto emit_clipped_scanline(
+            FrameBuffer &fb, Recti clip, i32 x0, i32 x1, i32 y, Color c
+        ) noexcept -> void {
             if (x0 > x1) {
                 std::swap(x0, x1);
             }
-            x0 = std::max(x0, 0);
-            x1 = std::min(x1, fb.width() - 1);
+            x0 = std::max(x0, clip.min.x());
+            x1 = std::min(x1, clip.max.x() - 1);
             if (x0 <= x1) {
                 write_scanline<M>(fb, x0, x1, y, c);
             }
@@ -332,11 +335,11 @@ namespace sr::raster {
         // -------- templated primitive impls --------
 
         template<BlendMode M>
-        auto draw_line_impl(FrameBuffer &fb, Vec2i a, Vec2i b, Color c) noexcept -> void {
+        auto draw_line_impl(FrameBuffer &fb, Recti clip, Vec2i a, Vec2i b, Color c) noexcept -> void {
             auto [x0, y0] = a;
             auto [x1, y1] = b;
 
-            if (!clip_line(x0, y0, x1, y1, fb.width(), fb.height())) {
+            if (!clip_line(x0, y0, x1, y1, clip)) {
                 return;
             }
             if constexpr (M != BlendMode::None) {
@@ -369,12 +372,14 @@ namespace sr::raster {
         }
 
         template<BlendMode M>
-        auto fill_polygon_impl(FrameBuffer &fb, std::span<const Vec2i> points, Color c) noexcept -> void;
+        auto fill_polygon_impl(FrameBuffer &fb, Recti clip, std::span<const Vec2i> points, Color c) noexcept -> void;
 
         template<BlendMode M>
-        auto draw_line_ex_impl(FrameBuffer &fb, Vec2i a, Vec2i b, f32 thickness, Color c) noexcept -> void {
+        auto draw_line_ex_impl(
+            FrameBuffer &fb, Recti clip, Vec2i a, Vec2i b, f32 thickness, Color c
+        ) noexcept -> void {
             if (thickness <= 1.0f) {
-                draw_line_impl<M>(fb, a, b, c);
+                draw_line_impl<M>(fb, clip, a, b, c);
                 return;
             }
 
@@ -408,11 +413,11 @@ namespace sr::raster {
                 },
             };
 
-            fill_polygon_impl<M>(fb, vertices, c);
+            fill_polygon_impl<M>(fb, clip, vertices, c);
         }
 
         template<BlendMode M>
-        auto draw_rect_impl(FrameBuffer &fb, Vec2i a, Vec2i b, Color c) noexcept -> void {
+        auto draw_rect_impl(FrameBuffer &fb, Recti clip, Vec2i a, Vec2i b, Color c) noexcept -> void {
             if constexpr (M != BlendMode::None) {
                 if (c.a == 0) {
                     return;
@@ -423,22 +428,22 @@ namespace sr::raster {
             auto [x0, y0] = lo;
             auto [x1, y1] = hi;
 
-            const i32 fw = fb.width();
-            const i32 fh = fb.height();
+            const i32 cxmin = clip.min.x(), cymin = clip.min.y();
+            const i32 cxmax = clip.max.x(), cymax = clip.max.y();
 
-            if (const i32 cx0 = std::max(x0, 0), cx1 = std::min(x1, fw - 1); cx0 <= cx1) {
-                if (y0 >= 0 && y0 < fh) {
+            if (const i32 cx0 = std::max(x0, cxmin), cx1 = std::min(x1, cxmax - 1); cx0 <= cx1) {
+                if (y0 >= cymin && y0 < cymax) {
                     write_scanline<M>(fb, cx0, cx1, y0, c);
                 }
-                if (y1 != y0 && y1 >= 0 && y1 < fh) {
+                if (y1 != y0 && y1 >= cymin && y1 < cymax) {
                     write_scanline<M>(fb, cx0, cx1, y1, c);
                 }
             }
 
-            const i32 vy0 = std::max(y0 + 1, 0);
-            const i32 vy1 = std::min(y1 - 1, fh - 1);
-            const bool x0_in = x0 >= 0 && x0 < fw;
-            const bool x1_in = x1 >= 0 && x1 < fw && x1 != x0;
+            const i32 vy0 = std::max(y0 + 1, cymin);
+            const i32 vy1 = std::min(y1 - 1, cymax - 1);
+            const bool x0_in = x0 >= cxmin && x0 < cxmax;
+            const bool x1_in = x1 >= cxmin && x1 < cxmax && x1 != x0;
             for (i32 y = vy0; y <= vy1; ++y) {
                 if (x0_in) {
                     write_pixel<M>(fb, x0, y, c);
@@ -450,7 +455,7 @@ namespace sr::raster {
         }
 
         template<BlendMode M>
-        auto fill_rect_impl(FrameBuffer &fb, Vec2i a, Vec2i b, Color c) noexcept -> void {
+        auto fill_rect_impl(FrameBuffer &fb, Recti clip, Vec2i a, Vec2i b, Color c) noexcept -> void {
             if constexpr (M != BlendMode::None) {
                 if (c.a == 0) {
                     return;
@@ -458,10 +463,10 @@ namespace sr::raster {
             }
 
             const auto [lo, hi] = normalize_rect(a, b);
-            i32 x0 = std::max(lo.x(), 0);
-            i32 y0 = std::max(lo.y(), 0);
-            i32 x1 = std::min(hi.x(), fb.width() - 1);
-            i32 y1 = std::min(hi.y(), fb.height() - 1);
+            i32 x0 = std::max(lo.x(), clip.min.x());
+            i32 y0 = std::max(lo.y(), clip.min.y());
+            i32 x1 = std::min(hi.x(), clip.max.x() - 1);
+            i32 y1 = std::min(hi.y(), clip.max.y() - 1);
             if (x0 > x1 || y0 > y1) {
                 return;
             }
@@ -472,7 +477,7 @@ namespace sr::raster {
         }
 
         template<BlendMode M>
-        auto draw_circle_impl(FrameBuffer &fb, Vec2i center, i32 r, Color c) noexcept -> void {
+        auto draw_circle_impl(FrameBuffer &fb, Recti clip, Vec2i center, i32 r, Color c) noexcept -> void {
             if (r <= 0) {
                 return;
             }
@@ -483,7 +488,7 @@ namespace sr::raster {
             }
             const auto [cx, cy] = center;
             const auto put = [&](i32 px, i32 py) noexcept {
-                if (fb.in_bounds(px, py)) {
+                if (clip.contains({px, py})) {
                     write_pixel<M>(fb, px, py, c);
                 }
             };
@@ -508,7 +513,7 @@ namespace sr::raster {
         }
 
         template<BlendMode M>
-        auto fill_circle_impl(FrameBuffer &fb, Vec2i center, i32 r, Color c) noexcept -> void {
+        auto fill_circle_impl(FrameBuffer &fb, Recti clip, Vec2i center, i32 r, Color c) noexcept -> void {
             if (r <= 0) {
                 return;
             }
@@ -518,13 +523,12 @@ namespace sr::raster {
                 }
             }
             const auto [cx, cy] = center;
-            const i32 fh = fb.height();
 
             const auto scan = [&](i32 xa, i32 xb, i32 yy) noexcept {
-                if (yy < 0 || yy >= fh) {
+                if (yy < clip.min.y() || yy >= clip.max.y()) {
                     return;
                 }
-                emit_clipped_scanline<M>(fb, xa, xb, yy, c);
+                emit_clipped_scanline<M>(fb, clip, xa, xb, yy, c);
             };
 
             walk_circle_octants(r, [&](i32 x, i32 y) noexcept {
@@ -540,7 +544,9 @@ namespace sr::raster {
         }
 
         template<BlendMode M>
-        auto draw_ellipse_impl(FrameBuffer &fb, Vec2i center, i32 rx, i32 ry, Color c) noexcept -> void {
+        auto draw_ellipse_impl(
+            FrameBuffer &fb, Recti clip, Vec2i center, i32 rx, i32 ry, Color c
+        ) noexcept -> void {
             if (rx <= 0 || ry <= 0) {
                 return;
             }
@@ -551,7 +557,7 @@ namespace sr::raster {
             }
             const auto [cx, cy] = center;
             const auto put = [&](i32 xx, i32 yy) noexcept {
-                if (fb.in_bounds(xx, yy)) {
+                if (clip.contains({xx, yy})) {
                     write_pixel<M>(fb, xx, yy, c);
                 }
             };
@@ -572,7 +578,9 @@ namespace sr::raster {
         }
 
         template<BlendMode M>
-        auto fill_ellipse_impl(FrameBuffer &fb, Vec2i center, i32 rx, i32 ry, Color c) noexcept -> void {
+        auto fill_ellipse_impl(
+            FrameBuffer &fb, Recti clip, Vec2i center, i32 rx, i32 ry, Color c
+        ) noexcept -> void {
             if (rx <= 0 || ry <= 0) {
                 return;
             }
@@ -582,15 +590,14 @@ namespace sr::raster {
                 }
             }
             const auto [cx, cy] = center;
-            const i32 fh = fb.height();
 
             // skip repeated scanlines at same y (walker yields multiple (x, y) with y fixed while x grows)
             i32 last_y = ry + 1;
             const auto scan = [&](i32 xa, i32 xb, i32 yy) noexcept {
-                if (yy < 0 || yy >= fh) {
+                if (yy < clip.min.y() || yy >= clip.max.y()) {
                     return;
                 }
-                emit_clipped_scanline<M>(fb, xa, xb, yy, c);
+                emit_clipped_scanline<M>(fb, clip, xa, xb, yy, c);
             };
 
             walk_ellipse_quadrants(rx, ry, [&](i32 xi, i32 yi) noexcept {
@@ -605,14 +612,18 @@ namespace sr::raster {
         }
 
         template<BlendMode M>
-        auto draw_triangle_impl(FrameBuffer &fb, Vec2i a, Vec2i b, Vec2i c, Color col) noexcept -> void {
-            draw_line_impl<M>(fb, a, b, col);
-            draw_line_impl<M>(fb, b, c, col);
-            draw_line_impl<M>(fb, c, a, col);
+        auto draw_triangle_impl(
+            FrameBuffer &fb, Recti clip, Vec2i a, Vec2i b, Vec2i c, Color col
+        ) noexcept -> void {
+            draw_line_impl<M>(fb, clip, a, b, col);
+            draw_line_impl<M>(fb, clip, b, c, col);
+            draw_line_impl<M>(fb, clip, c, a, col);
         }
 
         template<BlendMode M>
-        auto fill_triangle_impl(FrameBuffer &fb, Vec2i a, Vec2i b, Vec2i c, Color col) noexcept -> void {
+        auto fill_triangle_impl(
+            FrameBuffer &fb, Recti clip, Vec2i a, Vec2i b, Vec2i c, Color col
+        ) noexcept -> void {
             if constexpr (M != BlendMode::None) {
                 if (col.a == 0) {
                     return;
@@ -635,34 +646,41 @@ namespace sr::raster {
                 return from.x() + floor_div((y - from.y()) * (to.x() - from.x()), dy);
             };
 
-            const i32 fh = fb.height();
+            const i32 cymin = clip.min.y();
+            const i32 cymax = clip.max.y();
 
-            const i32 u_lo = std::max(a.y(), 0);
-            const i32 u_hi = std::min(b.y(), fh);
+            // upper half: [a.y, b.y) — open at b.y so the bottom vertex row belongs to the lower half
+            const i32 u_lo = std::max(a.y(), cymin);
+            const i32 u_hi = std::min(b.y(), cymax);
             for (i32 y = u_lo; y < u_hi; ++y) {
-                emit_clipped_scanline<M>(fb, edge_x(a, b, y), edge_x(a, c, y), y, col);
+                emit_clipped_scanline<M>(fb, clip, edge_x(a, b, y), edge_x(a, c, y), y, col);
             }
 
-            const i32 l_lo = std::max(b.y(), 0);
-            const i32 l_hi = std::min(c.y(), fh - 1);
-            for (i32 y = l_lo; y <= l_hi; ++y) {
-                emit_clipped_scanline<M>(fb, edge_x(b, c, y), edge_x(a, c, y), y, col);
+            // lower half: [b.y, c.y] — closed at c.y, expressed as half-open [b.y, c.y + 1)
+            const i32 l_lo = std::max(b.y(), cymin);
+            const i32 l_hi = std::min(c.y() + 1, cymax);
+            for (i32 y = l_lo; y < l_hi; ++y) {
+                emit_clipped_scanline<M>(fb, clip, edge_x(b, c, y), edge_x(a, c, y), y, col);
             }
         }
 
         template<BlendMode M>
-        auto draw_polygon_impl(FrameBuffer &fb, std::span<const Vec2i> points, Color c) noexcept -> void {
+        auto draw_polygon_impl(
+            FrameBuffer &fb, Recti clip, std::span<const Vec2i> points, Color c
+        ) noexcept -> void {
             const auto n = points.size();
             if (n < 2) {
                 return;
             }
             for (usize i = 0; i < n; ++i) {
-                draw_line_impl<M>(fb, points[i], points[(i + 1) % n], c);
+                draw_line_impl<M>(fb, clip, points[i], points[(i + 1) % n], c);
             }
         }
 
         template<BlendMode M>
-        auto fill_polygon_impl(FrameBuffer &fb, std::span<const Vec2i> points, Color c) noexcept -> void {
+        auto fill_polygon_impl(
+            FrameBuffer &fb, Recti clip, std::span<const Vec2i> points, Color c
+        ) noexcept -> void {
             if constexpr (M != BlendMode::None) {
                 if (c.a == 0) {
                     return;
@@ -680,9 +698,10 @@ namespace sr::raster {
                 y_min = std::min(y_min, y);
                 y_max = std::max(y_max, y);
             }
-            y_min = std::max(y_min, 0);
-            y_max = std::min(y_max, fb.height() - 1);
+            y_min = std::max(y_min, clip.min.y());
+            y_max = std::min(y_max, clip.max.y() - 1);
 
+            // per-thread amortized buffer — keeps fill_polygon thread-safe for tile-parallel rasterization
             thread_local std::vector<i32> intersections;
 
             for (i32 y = y_min; y <= y_max; ++y) {
@@ -706,21 +725,21 @@ namespace sr::raster {
                 std::sort(intersections.begin(), intersections.end());
 
                 for (usize i = 0; i + 1 < intersections.size(); i += 2) {
-                    emit_clipped_scanline<M>(fb, intersections[i], intersections[i + 1], y, c);
+                    emit_clipped_scanline<M>(fb, clip, intersections[i], intersections[i + 1], y, c);
                 }
             }
         }
 
         template<BlendMode M>
-        auto blit_impl(FrameBuffer &fb, const Texture &tex, Vec2i pos) noexcept -> void {
+        auto blit_impl(FrameBuffer &fb, Recti clip, const Texture &tex, Vec2i pos) noexcept -> void {
             const auto [px, py] = pos;
             const i32 tw = tex.width();
             const i32 th = tex.height();
 
-            const i32 x0 = std::max(0, -px);
-            const i32 y0 = std::max(0, -py);
-            const i32 x1 = std::min(tw, fb.width() - px);
-            const i32 y1 = std::min(th, fb.height() - py);
+            const i32 x0 = std::max(clip.min.x() - px, 0);
+            const i32 y0 = std::max(clip.min.y() - py, 0);
+            const i32 x1 = std::min(clip.max.x() - px, tw);
+            const i32 y1 = std::min(clip.max.y() - py, th);
             if (x0 >= x1 || y0 >= y1) {
                 return;
             }
@@ -737,7 +756,7 @@ namespace sr::raster {
 
         template<BlendMode M, SamplerFilter F, WrapMode W>
         auto blit_ex_impl(
-            FrameBuffer &fb, const Texture &tex, Vec2f pos, Vec2f origin, Vec2f scale, f32 angle
+            FrameBuffer &fb, Recti clip, const Texture &tex, Vec2f pos, Vec2f origin, Vec2f scale, f32 angle
         ) noexcept -> void {
             const f32 sx = scale.x();
             const f32 sy = scale.y();
@@ -769,10 +788,15 @@ namespace sr::raster {
                 max_y = std::max(max_y, ry);
             }
 
-            const i32 dst_x0 = std::max(0, static_cast<i32>(min_x));
-            const i32 dst_y0 = std::max(0, static_cast<i32>(min_y));
-            const i32 dst_x1 = std::min(fb.width() - 1, static_cast<i32>(max_x) + 1);
-            const i32 dst_y1 = std::min(fb.height() - 1, static_cast<i32>(max_y) + 1);
+            // i64 intermediates: avoid i32 overflow on the `+ 1` and on extreme rotated bboxes
+            const i64 mx0 = static_cast<i64>(min_x);
+            const i64 my0 = static_cast<i64>(min_y);
+            const i64 mx1 = static_cast<i64>(max_x) + 1;
+            const i64 my1 = static_cast<i64>(max_y) + 1;
+            const i32 dst_x0 = static_cast<i32>(std::max<i64>(clip.min.x(), mx0));
+            const i32 dst_y0 = static_cast<i32>(std::max<i64>(clip.min.y(), my0));
+            const i32 dst_x1 = static_cast<i32>(std::min<i64>(clip.max.x() - 1, mx1));
+            const i32 dst_y1 = static_cast<i32>(std::min<i64>(clip.max.y() - 1, my1));
 
             const f32 inv_sx = 1.f / sx;
             const f32 inv_sy = 1.f / sy;
@@ -843,93 +867,111 @@ namespace sr::raster {
 
     // -------- public API: runtime enum → compile-time dispatch --------
 
-    auto draw_line(FrameBuffer &fb, Vec2i a, Vec2i b, Color c, BlendMode mode) noexcept -> void {
+    auto draw_line(FrameBuffer &fb, Recti clip, Vec2i a, Vec2i b, Color c, BlendMode mode) noexcept -> void {
         dispatch_blend(mode, [&]<BlendMode M>(std::integral_constant<BlendMode, M>) {
-            draw_line_impl<M>(fb, a, b, c);
+            draw_line_impl<M>(fb, clip, a, b, c);
         });
     }
 
-    auto draw_line_ex(FrameBuffer &fb, Vec2i a, Vec2i b, f32 thickness, Color c, BlendMode mode) noexcept -> void {
+    auto draw_line_ex(
+        FrameBuffer &fb, Recti clip, Vec2i a, Vec2i b, f32 thickness, Color c, BlendMode mode
+    ) noexcept -> void {
         dispatch_blend(mode, [&]<BlendMode M>(std::integral_constant<BlendMode, M>) {
-            draw_line_ex_impl<M>(fb, a, b, thickness, c);
+            draw_line_ex_impl<M>(fb, clip, a, b, thickness, c);
         });
     }
 
-    auto draw_rect(FrameBuffer &fb, Vec2i a, Vec2i b, Color c, BlendMode mode) noexcept -> void {
+    auto draw_rect(FrameBuffer &fb, Recti clip, Vec2i a, Vec2i b, Color c, BlendMode mode) noexcept -> void {
         dispatch_blend(mode, [&]<BlendMode M>(std::integral_constant<BlendMode, M>) {
-            draw_rect_impl<M>(fb, a, b, c);
+            draw_rect_impl<M>(fb, clip, a, b, c);
         });
     }
 
-    auto fill_rect(FrameBuffer &fb, Vec2i a, Vec2i b, Color c, BlendMode mode) noexcept -> void {
+    auto fill_rect(FrameBuffer &fb, Recti clip, Vec2i a, Vec2i b, Color c, BlendMode mode) noexcept -> void {
         dispatch_blend(mode, [&]<BlendMode M>(std::integral_constant<BlendMode, M>) {
-            fill_rect_impl<M>(fb, a, b, c);
+            fill_rect_impl<M>(fb, clip, a, b, c);
         });
     }
 
-    auto draw_circle(FrameBuffer &fb, Vec2i center, i32 r, Color c, BlendMode mode) noexcept -> void {
+    auto draw_circle(
+        FrameBuffer &fb, Recti clip, Vec2i center, i32 r, Color c, BlendMode mode
+    ) noexcept -> void {
         dispatch_blend(mode, [&]<BlendMode M>(std::integral_constant<BlendMode, M>) {
-            draw_circle_impl<M>(fb, center, r, c);
+            draw_circle_impl<M>(fb, clip, center, r, c);
         });
     }
 
-    auto fill_circle(FrameBuffer &fb, Vec2i center, i32 r, Color c, BlendMode mode) noexcept -> void {
+    auto fill_circle(
+        FrameBuffer &fb, Recti clip, Vec2i center, i32 r, Color c, BlendMode mode
+    ) noexcept -> void {
         dispatch_blend(mode, [&]<BlendMode M>(std::integral_constant<BlendMode, M>) {
-            fill_circle_impl<M>(fb, center, r, c);
+            fill_circle_impl<M>(fb, clip, center, r, c);
         });
     }
 
-    auto draw_ellipse(FrameBuffer &fb, Vec2i center, i32 rx, i32 ry, Color c, BlendMode mode) noexcept -> void {
+    auto draw_ellipse(
+        FrameBuffer &fb, Recti clip, Vec2i center, i32 rx, i32 ry, Color c, BlendMode mode
+    ) noexcept -> void {
         dispatch_blend(mode, [&]<BlendMode M>(std::integral_constant<BlendMode, M>) {
-            draw_ellipse_impl<M>(fb, center, rx, ry, c);
+            draw_ellipse_impl<M>(fb, clip, center, rx, ry, c);
         });
     }
 
-    auto fill_ellipse(FrameBuffer &fb, Vec2i center, i32 rx, i32 ry, Color c, BlendMode mode) noexcept -> void {
+    auto fill_ellipse(
+        FrameBuffer &fb, Recti clip, Vec2i center, i32 rx, i32 ry, Color c, BlendMode mode
+    ) noexcept -> void {
         dispatch_blend(mode, [&]<BlendMode M>(std::integral_constant<BlendMode, M>) {
-            fill_ellipse_impl<M>(fb, center, rx, ry, c);
+            fill_ellipse_impl<M>(fb, clip, center, rx, ry, c);
         });
     }
 
-    auto draw_triangle(FrameBuffer &fb, Vec2i a, Vec2i b, Vec2i c, Color col, BlendMode mode) noexcept -> void {
+    auto draw_triangle(
+        FrameBuffer &fb, Recti clip, Vec2i a, Vec2i b, Vec2i c, Color col, BlendMode mode
+    ) noexcept -> void {
         dispatch_blend(mode, [&]<BlendMode M>(std::integral_constant<BlendMode, M>) {
-            draw_triangle_impl<M>(fb, a, b, c, col);
+            draw_triangle_impl<M>(fb, clip, a, b, c, col);
         });
     }
 
-    auto fill_triangle(FrameBuffer &fb, Vec2i a, Vec2i b, Vec2i c, Color col, BlendMode mode) noexcept -> void {
+    auto fill_triangle(
+        FrameBuffer &fb, Recti clip, Vec2i a, Vec2i b, Vec2i c, Color col, BlendMode mode
+    ) noexcept -> void {
         dispatch_blend(mode, [&]<BlendMode M>(std::integral_constant<BlendMode, M>) {
-            fill_triangle_impl<M>(fb, a, b, c, col);
+            fill_triangle_impl<M>(fb, clip, a, b, c, col);
         });
     }
 
-    auto draw_polygon(FrameBuffer &fb, std::span<const Vec2i> points, Color c, BlendMode mode) noexcept -> void {
+    auto draw_polygon(
+        FrameBuffer &fb, Recti clip, std::span<const Vec2i> points, Color c, BlendMode mode
+    ) noexcept -> void {
         dispatch_blend(mode, [&]<BlendMode M>(std::integral_constant<BlendMode, M>) {
-            draw_polygon_impl<M>(fb, points, c);
+            draw_polygon_impl<M>(fb, clip, points, c);
         });
     }
 
-    auto fill_polygon(FrameBuffer &fb, std::span<const Vec2i> points, Color c, BlendMode mode) noexcept -> void {
+    auto fill_polygon(
+        FrameBuffer &fb, Recti clip, std::span<const Vec2i> points, Color c, BlendMode mode
+    ) noexcept -> void {
         dispatch_blend(mode, [&]<BlendMode M>(std::integral_constant<BlendMode, M>) {
-            fill_polygon_impl<M>(fb, points, c);
+            fill_polygon_impl<M>(fb, clip, points, c);
         });
     }
 
-    auto blit(FrameBuffer &fb, const Texture &tex, Vec2i pos, BlendMode mode) noexcept -> void {
+    auto blit(FrameBuffer &fb, Recti clip, const Texture &tex, Vec2i pos, BlendMode mode) noexcept -> void {
         dispatch_blend(mode, [&]<BlendMode M>(std::integral_constant<BlendMode, M>) {
-            blit_impl<M>(fb, tex, pos);
+            blit_impl<M>(fb, clip, tex, pos);
         });
     }
 
     auto blit_ex(
-        FrameBuffer &fb, const Texture &tex, Vec2f pos, Vec2f origin, Vec2f scale, f32 angle,
+        FrameBuffer &fb, Recti clip, const Texture &tex, Vec2f pos, Vec2f origin, Vec2f scale, f32 angle,
         BlendMode mode, SamplerFilter filter, WrapMode wrap
     ) noexcept -> void {
         // 3 × 2 × 3 = 18 compile-time instantiations via nested dispatchers
         dispatch_blend(mode, [&]<BlendMode M>(std::integral_constant<BlendMode, M>) {
             dispatch_filter(filter, [&]<SamplerFilter F>(std::integral_constant<SamplerFilter, F>) {
                 dispatch_wrap(wrap, [&]<WrapMode W>(std::integral_constant<WrapMode, W>) {
-                    blit_ex_impl<M, F, W>(fb, tex, pos, origin, scale, angle);
+                    blit_ex_impl<M, F, W>(fb, clip, tex, pos, origin, scale, angle);
                 });
             });
         });

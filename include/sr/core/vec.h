@@ -1,21 +1,11 @@
 #pragma once
 
 #include <cmath>
-#include <concepts>
 #include <array>
 
 #include "sr/core/types.h"
 
 namespace sr {
-    template<typename T>
-    concept Integral = std::integral<T> && !std::same_as<T, bool>;
-
-    template<typename T>
-    concept Floating = std::floating_point<T>;
-
-    template<typename T>
-    concept Number = (Integral<T> || Floating<T>) && !std::same_as<T, bool>;
-
     template<Number T, usize N>
         requires (N > 0)
     struct Vec {
@@ -151,10 +141,10 @@ namespace sr {
 
 template<sr::Number T, sr::usize N>
     requires (N > 0)
-struct std::tuple_size<sr::Vec<T, N> > : std::integral_constant<std::size_t, N> {
+struct std::tuple_size<sr::Vec<T, N> > : std::integral_constant<sr::usize, N> {
 };
 
-template<std::size_t I, sr::Number T, sr::usize N>
+template<sr::usize I, sr::Number T, sr::usize N>
     requires (N > 0)
 struct std::tuple_element<I, sr::Vec<T, N> > {
     using type = T;

@@ -24,6 +24,7 @@ namespace sr {
             return colors::transparent;
         }
 
+        // raw ARGB pixel — skips Color::from_argb decode/re-encode in hot paths (sampler/blit)
         [[nodiscard]] auto get_pixel_argb(i32 x, i32 y) const noexcept -> Pixel {
             if (in_bounds(x, y)) {
                 return m_buf[static_cast<usize>(y) * m_width + x];
@@ -36,6 +37,7 @@ namespace sr {
             return Color::from_argb(m_buf[static_cast<usize>(y) * m_width + x]);
         }
 
+        // raw ARGB pixel — skips Color::from_argb decode/re-encode in hot paths (sampler/blit)
         [[nodiscard]] auto get_pixel_argb_unchecked(i32 x, i32 y) const noexcept -> Pixel {
             assert(in_bounds(x, y));
             return m_buf[static_cast<usize>(y) * m_width + x];

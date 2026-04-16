@@ -6,8 +6,9 @@
 #include "sr/core/vec.h"
 
 namespace sr {
-    // 2D rectangle with half-open intervals:
-    // a point p is inside iff min.x <= p.x < max.x && min.y <= p.y < max.y.
+    // 2D rectangle on a discrete pixel grid; bounds are half-open: a point p is inside iff
+    // min.x <= p.x < max.x && min.y <= p.y < max.y. `intersects`/`empty` follow the same
+    // convention (zero-size rect contains no pixels and is empty).
     template<Number T>
     struct Rect {
         Vec<T, 2> min{};
@@ -15,7 +16,7 @@ namespace sr {
 
         constexpr Rect() noexcept = default;
 
-        constexpr Rect(const Vec<T, 2> &min, const Vec<T, 2> &max) noexcept : min{min}, max{max} {
+        constexpr Rect(Vec<T, 2> min, Vec<T, 2> max) noexcept : min{min}, max{max} {
         }
 
         static constexpr auto from_pos_size(Vec<T, 2> pos, Vec<T, 2> size) noexcept -> Rect {

@@ -11,7 +11,7 @@ namespace sr {
         if (width <= 0 || height <= 0) {
             return std::unexpected{Error::InvalidDimensions};
         }
-        std::vector<Pixel> buf(static_cast<std::size_t>(width) * height, 0);
+        std::vector<Pixel> buf(static_cast<usize>(width) * height, 0);
         return FrameBuffer{width, height, std::move(buf)};
     }
 
@@ -35,7 +35,7 @@ namespace sr {
         if (x0 > x1) {
             return nullptr;
         }
-        return m_buf.data() + static_cast<std::size_t>(y) * m_width;
+        return m_buf.data() + static_cast<usize>(y) * m_width;
     }
 
     auto FrameBuffer::fill_hor_line(i32 x0, i32 x1, i32 y, Pixel p) noexcept -> void {
@@ -61,7 +61,7 @@ namespace sr {
 
     auto FrameBuffer::fill_hor_line_unchecked(i32 x0, i32 x1, i32 y, Pixel p) noexcept -> void {
         assert(x0 <= x1 && in_bounds(x0, y) && in_bounds(x1, y));
-        auto *row = m_buf.data() + static_cast<std::size_t>(y) * m_width;
+        auto *row = m_buf.data() + static_cast<usize>(y) * m_width;
         std::fill(row + x0, row + x1 + 1, p);
     }
 
@@ -74,7 +74,7 @@ namespace sr {
             fill_hor_line_unchecked(x0, x1, y, c.to_argb());
             return;
         }
-        auto *row = m_buf.data() + static_cast<std::size_t>(y) * m_width;
+        auto *row = m_buf.data() + static_cast<usize>(y) * m_width;
         for (i32 x = x0; x <= x1; ++x) {
             row[x] = c.blend_over(Color::from_argb(row[x])).to_argb();
         }
@@ -86,7 +86,7 @@ namespace sr {
         }
         m_width = w;
         m_height = h;
-        m_buf.assign(static_cast<std::size_t>(w) * h, 0);
+        m_buf.assign(static_cast<usize>(w) * h, 0);
         return {};
     }
 }

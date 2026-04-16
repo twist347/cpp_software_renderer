@@ -5,6 +5,7 @@
 #include <utility>
 #include <expected>
 #include <print>
+#include <concepts>
 
 #include "sr/core/error.h"
 
@@ -41,4 +42,13 @@ namespace sr {
         }
         return std::move(*res);
     }
+
+    template<typename T>
+    concept Integral = std::integral<T> && !std::same_as<T, bool>;
+
+    template<typename T>
+    concept Floating = std::floating_point<T>;
+
+    template<typename T>
+    concept Number = (Integral<T> || Floating<T>) && !std::same_as<T, bool>;
 }

@@ -6,13 +6,16 @@
 #include "sr/core/vec.h"
 
 namespace sr {
+    // 2D axis-aligned bounding box on continuous floats; bounds are closed: a point v is inside iff
+    // min.x <= v.x <= max.x && min.y <= v.y <= max.y. `intersects`/`empty` follow the same
+    // convention (zero-size box contains exactly one point and is non-empty).
     struct AABB2D {
         Vec2f min{};
         Vec2f max{};
 
         constexpr AABB2D() noexcept = default;
 
-        constexpr AABB2D(const Vec2f &min, const Vec2f &max) noexcept : min{min}, max{max} {
+        constexpr AABB2D(Vec2f min, Vec2f max) noexcept : min{min}, max{max} {
         }
 
         static constexpr auto from_pos_size(Vec2f pos, Vec2f size) noexcept -> AABB2D {
@@ -38,8 +41,8 @@ namespace sr {
             };
         }
 
-        [[nodiscard]] constexpr auto valid() const noexcept -> bool {
-            return max.x() >= min.x() && max.y() >= min.y();
+        [[nodiscard]] constexpr auto empty() const noexcept -> bool {
+            return max.x() < min.x() || max.y() < min.y();
         }
     };
 }
