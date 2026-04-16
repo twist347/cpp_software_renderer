@@ -1,7 +1,7 @@
-function(sr_add_demo SOURCE_NAME TARGET_NAME)
-    add_executable(${SOURCE_NAME} ${TARGET_NAME})
-    target_link_libraries(${SOURCE_NAME} PRIVATE sr)
-    target_compile_options(${SOURCE_NAME} PRIVATE -Wall -Wextra -pedantic)
+function(sr_add_demo TARGET_NAME SOURCE_NAME)
+    add_executable(${TARGET_NAME} ${SOURCE_NAME})
+    target_link_libraries(${TARGET_NAME} PRIVATE sr)
+    target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -pedantic)
 endfunction()
 
 add_subdirectory(01_primitives)

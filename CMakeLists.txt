@@ -38,3 +38,11 @@ target_link_libraries(sr PRIVATE minifb::minifb)
 target_compile_options(sr PRIVATE -Wall -Wextra -pedantic)
 
 add_subdirectory(demos)
+
+option(BUILD_TEST "Build unit tests" ON)
+
+if (BUILD_TEST)
+    add_subdirectory(thirdparty/googletest-1.17.0 EXCLUDE_FROM_ALL SYSTEM)
+    enable_testing()
+    add_subdirectory(test)
+endif ()

@@ -1,0 +1,13 @@
+function(cr_add_test TARGET_NAME SOURCE_NAME)
+    add_executable(${TARGET_NAME} ${SOURCE_NAME})
+    target_link_libraries(${TARGET_NAME} PRIVATE sr GTest::gtest_main)
+    target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -pedantic)
+    add_test(NAME ${TARGET_NAME} COMMAND ${TARGET_NAME})
+endfunction()
+
+cr_add_test(test_color test_color.cpp)
+cr_add_test(test_vec test_vec.cpp)
+cr_add_test(test_rect test_rect.cpp)
+cr_add_test(test_framebuffer test_framebuffer.cpp)
+cr_add_test(test_texture test_texture.cpp)
+cr_add_test(test_raster test_raster.cpp)
